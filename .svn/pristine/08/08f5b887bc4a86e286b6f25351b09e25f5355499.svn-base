@@ -1,0 +1,16 @@
+<p class="bg-danger">Exception</p>
+
+<script type="text/javascript"><!--
+    var _bs_title = 'Exception';
+    var _bs_btns =  [
+        {
+            label:'Close',
+            action:function(dialogRef){
+                dialogRef.close();
+            }
+        }
+    ];
+    bsdialog
+    .setTitle(_bs_title)
+    .setButtons(_bs_btns);
+//--></script>

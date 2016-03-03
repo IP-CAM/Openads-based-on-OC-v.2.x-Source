@@ -1,0 +1,171 @@
+<div class="col-sm-12 clearfix">
+    <form method="post" class="form-horizontal" id="component-targeting">
+    <input type="hidden" name="entry_id" value="<?php echo $entry_id ?>">
+    <input type="hidden" name="mode" value="targeting">
+    <div class="do-result">
+        <?php if($locked){ ?>
+        <div class="alert alert-warning">
+            <i class="fa fa-exclamation-circle"></i> 
+            <?php echo $text_lock ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        <?php }?>
+    </div>
+
+    <?php if(!empty($operator)) { ?>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_operator ?></label>
+        <div class="col-sm-10">
+            <label class="label label-default"><?php echo $operator ?></label>
+        </div>
+    </div>
+    <?php } ?>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_target_url ?></label>
+        <div class="col-sm-10">
+            <textarea class="form-control" ><?php echo $target_url ?></textarea>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_location ?></label>
+        <div class="col-sm-10">
+            <?php if(is_array($locations)) { ?>
+            <?php foreach ($locations as $item): ?>            
+            <?php if(in_array($item['targeting_id'], $location)){ ?>
+            <label class="label label-default"><?php echo $item['name'] ?></label>
+            <?php }?>
+            <?php endforeach ?>
+            <?php }?>
+            <?php if(!empty($other_location)){ ?>
+            <div class="well well-sm"><?php echo $other_location ?></div>
+            <?php }?>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_age ?></label>
+        <div class="col-sm-10">
+            <label class="label label-default">
+                <?php echo $age_min ?> - <?php echo $age_max >65 ? '65+' : $age_max ?>
+            </label>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_gender ?></label>
+        <div class="col-sm-10">
+            <?php foreach ($genders as $item): ?>
+            <?php if($gender==$item['targeting_id']){ ?> 
+            <label class="label label-default"><?php echo $item['name'] ?></label>
+            <?php }?>
+            <?php endforeach ?>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_language ?></label>
+        <div class="col-sm-10">
+            <?php if(is_array($languages)) { ?>
+            <?php foreach ($languages as $item): ?>
+            <?php if(in_array($item['targeting_id'], $language)){ ?>
+            <label class="label label-default"><?php echo $item['name'] ?></label>
+            <?php }?>
+            <?php endforeach ?>
+            <?php }?>
+            <?php if(!empty($other_language)){ ?>
+                <div class="well well-sm"><?php echo $other_language ?></div>
+            <?php }?>
+        </div>
+    </div>
+    <?php if(!empty($interest)){ ?>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_interest ?></label>
+        <div class="col-sm-10">
+            <label class="label label-default"><?php echo $interest ?></label>
+        </div>
+    </div>
+    <?php }?>
+
+    <?php if(!empty($behavior)){ ?>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_behavior ?></label>
+        <div class="col-sm-10">
+            <label class="label label-default"><?php echo $behavior ?></label>
+        </div>
+    </div>
+    <?php }?>
+
+    <?php if(!empty($more)) { ?>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_more ?></label>
+        <div class="col-sm-10">
+            <label class="label label-default"><?php echo $more ?></label>
+        </div>
+    </div>
+    <?php }?>
+    <?php if(!empty($audience)) { ?>
+    <div class="form-group">
+        <label class="col-sm-2 text-right"><?php echo $entry_audience ?></label>
+        <div class="col-sm-10">
+            <label class="label label-default"><?php echo $audience ?></label>
+        </div>
+    </div>
+    <?php }?>
+
+    <?php if($approve){ ?>
+    <fieldset>
+        <legend></legend>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><?php echo $entry_status ?></label>
+            <div class="col-sm-10">
+                <?php foreach ($targeting_statuses as $item): ?>
+                <div class="<?php echo ($item['status_id'] == $rejected ) ? 'radio' : 'radio-inline' ?>">
+                    <label>
+                        <input name="status" type="radio" value="<?php echo $item['status_id'] ?>" <?php echo $status == $item['status_id'] ? 'checked' : '' ?>>
+                        <?php echo $item['name'] ?>
+                    </label>
+                </div>
+                <?php endforeach ?>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 text-right"><?php echo $entry_note ?></label>
+            <div class="col-sm-10">
+                <textarea name="note" class="form-control"><?php echo $note ?></textarea>
+            </div>
+        </div>
+    </fieldset>
+    <?php }?>
+
+</form>
+</div>
+<script type="text/javascript"><!--
+    $('#component-detail').dialog('option', 'title', '<?php echo $heading_title ?>');
+    $('#component-detail').dialog('option', 'buttons' , {
+        '<?php echo $button_close ?>':function(e){
+            _component.update(
+                'index.php?route=service/advertise/relax&token=<?php echo $token;?>',
+                {mode:'targeting',entry_id:'<?php echo $entry_id ?>',valid:1,relax:1},
+                false
+            );
+            $(this).dialog('close');
+        }
+
+        <?php if($approve){ ?>
+        ,
+        '<?php echo $button_save ?>':function(dialogRef){
+            _component.update(
+                'index.php?route=service/advertise/approve&token=<?php echo $token;?>',
+                $('#component-targeting').serialize()
+            );
+        }
+        <?php }?>
+
+        <?php if($relax){ ?>
+        ,
+        '<?php echo $button_relax ?>':function(dialogRef){
+            _component.update(
+                'index.php?route=service/advertise/relax&token=<?php echo $token;?>',
+                {mode:'targeting',entry_id:'<?php echo $entry_id ?>'}
+            );
+        }
+        <?php }?>
+    });
+//--></script>

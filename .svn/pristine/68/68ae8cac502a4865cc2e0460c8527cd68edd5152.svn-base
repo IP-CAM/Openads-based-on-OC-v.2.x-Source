@@ -1,0 +1,80 @@
+<div  class="col-sm-12 clearfix">
+    <form method="post" class="form-horizontal" id="transfer-form">
+        <input type="hidden" name="entry_id" value="<?php echo $entry_id ?>">
+        <input type="hidden" name="mode" value="<?php echo $mode?>">
+        <div class="do-result">
+            <?php if($locked){  ?>
+            <div class="alert alert-warning">
+                <i class="fa fa-exclamation-circle"></i>
+                <?php echo $text_lock ?>
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+            <?php }?>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><?php echo $entry_operator ?></label>
+            <div class="col-sm-10">
+                <select name="operator" class="form-control" <?php echo ($reset) ? 'disabled' : '' ?>>
+                    <?php foreach ($operators as $item): ?>
+                    <option value="<?php echo $item['user_id'] ?>" <?php echo $user_id == $item['user_id'] ? 'selected' : ''?>>
+                    <?php echo $item['name'] ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><?php echo $entry_note ?></label>
+            <div class="col-sm-10">
+                <textarea name="note" class="form-control" <?php echo ($reset) ? 'disabled' : '' ?>><?php echo $note ?></textarea>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $('#component-detail').dialog('option', 'title', '<?php echo $heading_title ?>');
+    $('#component-detail').dialog('option', 'buttons' ,
+        {
+            '<?php echo $button_close ?>' : function(e){
+                _component.update(
+                    'index.php?route=service/advertise_transfer/unlock&token=<?php echo $token?>',
+                    {mode:'<?php echo $mode;?>',entry_id:'<?php echo $entry_id ?>',valide:1,unlock:1},
+                    false
+                );
+                $(this).dialog('close');
+            }
+
+            <?php if($transfer){ ?>
+            ,
+            '<?php echo $button_transfer ?>' : function(e){
+                _component.update(
+                    'index.php?route=service/advertise_transfer/transfer&token=<?php echo $token?>',
+                    $('#transfer-form').serialize()
+                );
+            }
+            <?php } ?>
+            <?php if($reset){ ?>
+            ,
+            '<?php echo $button_reset ?>':function(e){
+                if(confirm('<?php echo $text_confirm_reset ?>')){
+                    _component.update(
+                        'index.php?route=service/advertise_transfer/reset&token=<?php echo $token?>',
+                        {mode:'<?php echo $mode;?>',entry_id:'<?php echo $entry_id ?>'}
+                    );
+                }
+            }
+            <?php } ?>
+            <?php if($unblocked){ ?>
+            ,
+            '<?php echo $button_unlock ?>':function(e){
+                if(confirm('<?php echo $text_confirm_relax ?>')){
+                    _component.update(
+                        'index.php?route=service/advertise_transfer/relax&token=<?php echo $token?>',
+                        {mode:'<?php echo $mode;?>',entry_id:'<?php echo $entry_id ?>'}
+                    );
+                }
+            }
+            <?php }?>
+        }
+    );
+</script>

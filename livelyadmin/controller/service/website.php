@@ -1,0 +1,335 @@
+<?php
+class ControllerServiceWebsite extends Controller {
+    private $error = array();
+
+    private $params = array(
+        'filter_website_sn' => 'filter_website_sn',
+        'filter_product' => 'filter_product',
+        'filter_domain' => 'filter_domain',
+        'filter_customer_id' => 'filter_customer_id',
+        'filter_status' => 'filter_status',
+        'filter_in_charge' => 'filter_in_charge',
+        'filter_modified_start' => 'filter_modified_start',
+        'filter_modified_end' => 'filter_modified_end',
+        'sort' => array('default'=>'w.website_sn'),
+        'order' => array('default'=>'DESC'),
+        'page' => array('default' => 1),
+    );
+    public function index() {
+        $this->load->language('service/website');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+        $this->document->addScript(TPL_JS.'form.js');
+        $this->document->addStyle(TPL_JS.'formvalidation/dist/css/formValidation.css');
+        $this->document->addScript(TPL_JS.'formvalidation/dist/js/formValidation.js');
+        $this->document->addScript(TPL_JS.'formvalidation/dist/js/framework/bootstrap.min.js');
+        $this->document->addStyle(TPL_JS.'bootstrap/ui/custom-theme/jquery-ui-1.10.3.custom.css');
+        $this->document->addScript(TPL_JS.'bootstrap/ui/custom-theme/jquery-ui-1.10.3.custom.js');
+        $this->load->model('service/website');
+
+        $this->params['token'] = $this->session->data['token'];
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link('service/website', 'token=' . $this->session->data['token'], 'SSL')
+        );
+        $data['action'] = $this->url->link('service/website/save', 'token=' . $this->session->data['token'], 'SSL');
+
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
+        } else {
+            $data['error_warning'] = '';
+        }
+
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+
+        if (isset($this->request->post['selected'])) {
+            $data['selected'] = (array)$this->request->post['selected'];
+        } else {
+            $data['selected'] = array();
+        }
+
+        $this->load->model('user/user');
+        $data['users'] = $this->model_user_user->getUsers();
+
+        $this->load->model('customer/customer');
+        $data['customers'] = $this->user->getCustomers();
+
+        $this->load->model('catalog/product');
+        $data['products'] = $this->model_catalog_product->getProducts();
+
+        //Filter Data
+        $filter_data = $this->request->getFilter($this->params);
+        $data = array_merge($data, $filter_data);
+        $filter_data['start'] = ($filter_data['page'] - 1) * $this->config->get('config_limit_admin');
+        $filter_data['limit'] = $this->config->get('config_limit_admin');
+        $data['filter_customer'] = '';
+        if ($filter_data['filter_customer_id']) {
+            $customer = $this->model_customer_customer->getCustomer($filter_data['filter_customer_id']);
+            $data['filter_customer'] = empty($customer['username']) ? '' : $customer['username'] . ' ' . $customer['nickname'];
+        }
+        //Results
+        $data['websites'] = array();
+        $total = $this->model_service_website->getTotalWebsites($filter_data);
+        $results = $this->model_service_website->getWebsites($filter_data);
+        foreach ($results as $result) {
+
+
+            $customer = $this->model_customer_customer->getCustomer($result['customer_id']);
+            $in_charge = $this->model_user_user->getUser($result['in_charge']);
+
+            $data['websites'][] = array(
+                'website_id'    => $result['website_id'],
+                'website_sn'    => $result['website_sn'],
+                'product_id'    => $result['product_id'],
+                'domain'        => $result['domain'],
+                'product'       => $this->adstyle->getProductText($result['product_id']),
+                'customer'      => empty($customer['nickname']) ? $this->language->get('text_unknown') : $customer['nickname'],
+                'charger'       => empty($in_charge['nickname']) ? $this->language->get('text_unknown') : $in_charge['nickname'],
+                'in_charge'     => $result['in_charge'],
+                'show'          => $result['show'],
+                'status'        => $result['status'],
+                'status_text'   => $result['status'] ? $this->language->get('text_active') : $this->language->get('text_stop'),
+                'ads'           => $result['ads'],
+                'ad_list'       => $this->url->link('service/advertise', 'token=' . $this->session->data['token'] . '&website_id=' . $result['website_id'] , 'SSL'),
+                'date_modified' => date('Y-m-d H:i', strtotime($result['date_modified'])),
+                'history'       => $this->url->link('service/website/history', 'token=' . $this->session->data['token'] . '&website_id=' . $result['website_id'] , 'SSL'),
+            );
+        }
+        //Pagination
+        $pagination = new Pagination();
+        $pagination->total = $total;
+        $pagination->page = $filter_data['page'];
+        $pagination->limit = $this->config->get('config_limit_admin');
+        $pagination->url = $this->url->link('service/website',  $this->request->setPageUrl($this->params) . '&page={page}', 'SSL');
+        $data['pagination'] = $pagination->render();
+        $data['results'] = $pagination->getResults($this->language->get('text_pagination'));
+
+        //Sort Order
+        $url = $this->request->setOrderUrl($this->params);
+        $data['sort_sn'] = $this->url->link('service/website', $url . '&sort=w.website_sn' , 'SSL');
+        $data['sort_domain'] = $this->url->link('service/website', $url . '&sort=w.domain' , 'SSL');
+        $data['sort_product'] = $this->url->link('service/website', $url . '&sort=w.product_id' , 'SSL');
+        $data['sort_customer'] = $this->url->link('service/website', $url . '&sort=customer' , 'SSL');
+        $data['sort_status'] = $this->url->link('service/website', $url . '&sort=status' , 'SSL');
+        $data['sort_in_charge'] = $this->url->link('service/website', $url . '&sort=w.in_charge' , 'SSL');
+        $data['sort_date_added'] = $this->url->link('service/website', $url . '&sort=w.date_added' , 'SSL');
+        $data['sort_date_modified'] = $this->url->link('service/website', $url . '&sort=w.date_modified' , 'SSL');
+
+        //Text
+        $this->language->setText($data,array(
+            'heading_title' => 'heading_title',
+            'text_list' => 'text_list',
+            'text_no_results' => 'text_no_results',
+            'text_confirm' => 'text_confirm',
+            'text_edit' => 'text_edit',
+            'text_stop' => 'text_stop',
+            'text_confirm_save' => 'text_confirm_save',
+            'text_confirm_new' => 'text_confirm_new',
+            'text_title_new' => 'text_title_new',
+            'text_title_history' => 'text_title_history',
+            'text_filter_toggle' => 'text_filter_toggle',
+            'error_product' => 'error_product',
+            'error_no_customer' => 'error_no_customer',
+            'error_domain' => 'error_domain',
+            'error_domain_invalid' => 'error_domain_invalid',
+            'column_product' => 'column_product',
+            'column_domain' => 'column_domain',
+            'column_customer' => 'column_customer',
+            'column_status' => 'column_status',
+            'column_ads' => 'column_ads',
+            'column_in_charge' => 'column_in_charge',
+            'column_date_added' => 'column_date_added',
+            'column_date_modified' => 'column_date_modified',
+            'column_id' => 'column_id',
+            'column_sn' => 'column_sn',
+            'column_action' => 'column_action',
+            'entry_product' => 'entry_product',
+            'entry_website_sn' => 'entry_website_sn',
+            'entry_domain' => 'entry_domain',
+            'entry_customer' => 'entry_customer',
+            'entry_in_charge' => 'entry_in_charge',
+            'entry_status' => 'entry_status',
+            'entry_note' => 'entry_note',
+            'entry_date_modified' => 'entry_date_modified',
+            'entry_modified_start' => 'entry_modified_start',
+            'entry_modified_end' => 'entry_modified_end',
+            'button_view' => 'button_view',
+            'button_save' => 'button_save',
+            'button_close' => 'button_close',
+            'button_filter' => 'button_filter',
+            'text_history_alt' => 'text_history_alt',
+            'text_edit_alt' => 'text_edit_alt',
+            'text_show_alt' => 'text_show_alt',
+            'text_hide_alt' => 'text_hide_alt',
+            'text_disabled_alt' => 'text_disabled_alt',
+            'text_enabled_alt' => 'text_enabled_alt',
+        ));
+        $this->response->setOutput($this->load->view('service/website.tpl', $data,true));
+    }
+
+    public function detail() {
+        $this->load->language('service/website');
+
+        $this->load->model('service/website');
+
+        $website_id = isset($this->request->get['website_id']) ? (int)$this->request->get['website_id'] : false;
+        $website = $this->model_service_website->getWebsite($website_id);
+        $this->response->setOutput(json_encode($website));
+    }
+
+    public function save() {
+        $this->load->language('service/website');
+
+        $this->load->model('service/website');
+
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
+            $this->model_service_website->editWebsite($this->request->post);
+
+            $this->session->data['success'] = $this->language->get('text_success');
+            $json = array('status'=>1);
+        }else{
+            $json = array('status'=>0,'msg'=>implode(' , ', $this->error));
+        }
+        $this->response->setOutput(json_encode($json));
+    }
+
+    protected function validate() {
+        if (!$this->user->isSupervisor() && !$this->user->isManager()) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        }
+        if(isset($this->request->post['domain']) && !isURL(htmlspecialchars_decode($this->request->post['domain']))){
+            $this->error['domain'] = $this->language->get('error_domain');     
+        }
+        if(isset($this->request->post['product_id']) && !$this->request->post['product_id']){
+            $this->error['product'] = $this->language->get('error_product');     
+        }
+
+        if(isset($this->request->post['field']) && strtolower($this->request->post['field'])=='domain'){
+            if(!isURL(htmlspecialchars_decode($this->request->post['value']))){
+                $this->error['domain'] = $this->language->get('error_domain');       
+            }
+        }
+        if(isset($this->request->post['field']) && strtolower($this->request->post['field'])=='product_id'){
+            if(!$this->request->post['value']){
+                $this->error['product'] = $this->language->get('error_product');       
+            }
+        }
+        return !$this->error;
+    }
+
+    public function history() {
+        $this->load->language('service/website');
+        $this->load->model('service/website');
+
+        $data['text_no_results'] = $this->language->get('text_no_results');
+        $data['column_date_added'] = $this->language->get('column_date_added');
+        $data['column_status'] = $this->language->get('column_status');
+        $data['column_note'] = $this->language->get('column_note');
+        $data['column_from'] = $this->language->get('column_from');
+        $data['column_operator'] = $this->language->get('column_operator');
+
+        if (isset($this->request->get['page'])) {
+            $page = $this->request->get['page'];
+        } else {
+            $page = 1;
+        }
+
+        $data['histories'] = array();
+
+        $this->load->model('service/website');
+
+        $results = $this->model_service_website->getWebsiteHistories($this->request->get['website_id'], ($page - 1) * 10, 10);
+
+        foreach ($results as $result) {
+
+            $operator = '';
+            if($result['customer_id']){
+                $operator = ' -- ';
+            }else if($result['in_charge']){
+                $operator = '<span class="label label-default">'.$this->language->get('text_backend').'</span>';
+            }
+            $data['histories'][] = array(
+                'from'       => $result['from']=='member' ? $this->language->get('entry_from_member') : $this->language->get('entry_from_backend'),
+                'operator'   => $operator,
+                'status'     => $result['status'] ? $this->language->get('text_active') : $this->language->get('text_stop'),
+                'note'       => nl2br($result['note']),
+                'date_added' => date('Y-m-d H:i:s', strtotime($result['date_added']))
+            );
+        }
+
+        $history_total = $this->model_service_website->getTotalWebsiteHistories($this->request->get['website_id']);
+
+        $pagination = new Pagination();
+        $pagination->total = $history_total;
+        $pagination->page = $page;
+        $pagination->limit = 10;
+        $pagination->url = $this->url->link('service/website/history', '&website_id=' . $this->request->get['website_id'] . '&page={page}', 'SSL');
+
+        $data['pagination'] = $pagination->render();
+
+        $data['results'] = $pagination->getResults($this->language->get('text_pagination'));
+
+        $this->response->setOutput($this->load->view('service/ws_history.tpl', $data));
+    }
+
+    function tracking(){
+        $this->load->language('service/website');
+        $this->load->model('service/website');
+        $this->load->model('tool/image');
+        $website_id = isset($this->request->post['website_id']) ? (int)$this->request->post['website_id'] : false;
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && isset($this->request->post['text'])){
+            $this->model_service_website->readMessage($website_id);
+            $this->model_service_website->addWebsiteTracking($website_id,$this->request->post);
+        }
+        $data['website_id'] = $website_id;
+
+        $data['button_send'] = $this->language->get('button_send');
+        $data['token'] = $this->session->data['token'];
+        $data['button_delete'] = $this->language->get('button_delete');
+        $data['button_download'] = $this->language->get('button_download');
+        $trackings = $this->model_service_website->getWebsiteTrackings($website_id);
+        if(is_array($trackings)){
+            foreach ($trackings as $key => $item) {
+                $trackings[$key]['date'] = date('Y-m-d',strtotime($item['date_added']));
+                $trackings[$key]['time'] = date('H:i:s',strtotime($item['date_added']));
+                $file = array();
+                if(!empty($item['attach'])){
+                    $attaches = json_decode($item['attach'],true);
+                    if(is_array($attaches)){
+                        foreach ($attaches as $attach) {
+                            if(!isset($attach['path']) || !file_exists($attach['path'])){
+                                continue;
+                            }
+                            $_path = substr($attach['path'],strpos($attach['path'],'/')+1);
+                            $file[] = array(
+                                'realpath' => HTTP_CATALOG.$_path,
+                                'name' => $attach['name'],
+                                'path' => $_path,
+                                'image' => $this->model_tool_image->resize($attach['path'], 100, 100,true),
+                                'download' => $this->url->download(array('token'=>$this->session->data['token'],'path'=>$attach['path'],'name'=>$attach['name']))
+                            );
+                        }
+                    }
+                    
+                }
+                $trackings[$key]['attach'] = $file;
+            }
+        }
+        $data['trackings'] = $trackings;
+
+        $this->response->setOutput($this->load->view('service/website_tracking.tpl', $data));
+    }
+}

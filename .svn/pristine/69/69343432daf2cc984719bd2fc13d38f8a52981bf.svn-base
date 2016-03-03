@@ -1,0 +1,101 @@
+<?php
+class ModelAccountTargeting extends Model {
+    public function getAdTargetings($data = array()) {
+        $sql = "SELECT at.*,a.product_id,a.target_url,a.publish,a.ad_account,att.targeting_sn FROM ".DB_PREFIX."advertise_targeting at LEFT JOIN ".DB_PREFIX."advertise a ON at.advertise_id = a.advertise_id LEFT JOIN ".DB_PREFIX."advertise_targeting_template att ON at.template_id=att.template_id WHERE a.customer_id = '".$this->customer->getId()."'";
+
+        if (!empty($data['filter_interest'])) {
+            $sql .= " AND at.interest LIKE '%" . $this->db->escape($data['filter_interest']) . "%'";
+        }
+        if (!empty($data['filter_gender'])) {
+            $sql .= " AND at.gender = '" . (int)$data['filter_gender'] . "'";
+        }
+        if (!empty($data['filter_target_url'])) {
+            $sql .= " AND a.`target_url` LIKE '%" . $this->db->escape($data['filter_target_url']) . "%'";
+        }
+        if (!empty($data['filter_targeting_sn'])) {
+            $sql .= " AND att.targeting_sn LIKE '" . $data['filter_targeting_sn'] . "%'";
+        }
+        if (!empty($data['filter_publish'])) {
+            $sql .= " AND a.publish = '" . (int)$data['filter_publish'] . "'";
+        }        
+        if (isset($data['filter_language'])) {
+            $sql .= " AND FIND_IN_SET('".(int)$data['filter_language']."',at.language)";
+        }   
+        if (isset($data['filter_location'])) {
+            $sql .= " AND FIND_IN_SET('".(int)$data['filter_location']."',at.location)";
+        }         
+        $sort_data = array(
+            'at.targeting_id',
+            'att.targeting_sn',
+            'at.publish',
+            'at.location',
+            'at.gender',
+            'a.target_url',
+            'at.audience',
+            'at.age_min',
+            'at.language',
+        );
+        $sql .= " ORDER BY IF(at.targeting_id > 0 ,0,1) , ";
+        if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+            $sql .=  $data['sort'];
+        } else {
+            $sql .= "at.targeting_id";
+        }
+
+        if (isset($data['order']) && ($data['order'] == 'ASC')) {
+            $sql .= " ASC";
+        } else {
+            $sql .= " DESC";
+        }
+
+        if (isset($data['start']) || isset($data['limit'])) {
+            if ($data['start'] < 0) {
+                $data['start'] = 0;
+            }
+
+            if ($data['limit'] < 1) {
+                $data['limit'] = 20;
+            }
+
+            $sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+        }
+
+        $query = $this->db->query($sql);
+
+        return $query->rows;
+    }
+
+    public function getTotalAdTargetings($data = array()) {
+        $sql = "SELECT COUNT(at.targeting_id) AS total FROM `" . DB_PREFIX . "advertise_targeting` at LEFT JOIN ".DB_PREFIX."advertise a ON at.advertise_id = a.advertise_id LEFT JOIN ".DB_PREFIX."advertise_targeting_template att ON at.template_id=att.template_id WHERE a.customer_id = '".$this->customer->getId()."'";
+        if (!empty($data['filter_interest'])) {
+            $sql .= " AND at.interest LIKE '%" . $this->db->escape($data['filter_interest']) . "%'";
+        }
+        if (!empty($data['filter_gender'])) {
+            $sql .= " AND at.gender = '" . (int)$data['filter_gender'] . "'";
+        }
+        if (!empty($data['filter_publish'])) {
+            $sql .= " AND a.publish = '" . (int)$data['filter_publish'] . "'";
+        }        
+        if (!empty($data['filter_target_url'])) {
+            $sql .= " AND a.`target_url` LIKE '%" . $this->db->escape($data['filter_target_url']) . "%'";
+        }        
+        if (!empty($data['filter_targeting_sn'])) {
+            $sql .= " AND att.targeting_sn LIKE '" . $data['filter_targeting_sn'] . "%'";
+        }
+        if (isset($data['filter_language'])) {
+            $sql .= " AND FIND_IN_SET('".(int)$data['filter_language']."',at.language)";
+        }   
+        if (isset($data['filter_location'])) {
+            $sql .= " AND FIND_IN_SET('".(int)$data['filter_location']."',at.location)";
+        }       
+        $query = $this->db->query($sql);
+
+        return $query->row['total'];
+    }
+    public function getAdTargeting($targeting_id) {
+        $query = $this->db->query("SELECT * FROM ".DB_PREFIX."advertise_targeting WHERE targeting_id = '".(int)$targeting_id."'");
+        return $query->row;
+    }
+
+
+}

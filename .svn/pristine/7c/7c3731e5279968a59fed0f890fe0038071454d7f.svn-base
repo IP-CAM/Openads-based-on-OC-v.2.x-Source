@@ -1,0 +1,258 @@
+<?php
+class ModelSettingMap extends Model {
+
+    protected $_nodes = array();
+
+    public function saveNode($data) {
+
+        if(!empty($data['node_id'])){
+            $where['node_id'] = $node_id = (int)$data['node_id'];
+            if(isset($data['drag']) && $data['drag'] ==1){
+                $fields = array();
+                $fields['parent_id'] = (int)$data['parent'];
+                $fields['sort'] = (int)$data['position'];
+
+                return $this->db->update("map",$where,$fields);
+            }else{
+                $fields = array(
+                    'parent_id' => (int)$data['parent_id'],
+                    'note'      => is_array($data['note']) ? json_encode($data['note']) : '',
+                    'function'  => trim($data['function'],"/"),
+                    'class'     => trim($data['class'],"/"),
+                    'catalog'   => trim($data['catalog'],"/"),
+                    'ignore'    => (int)$data['ignore'],
+                    'status'    => (int)$data['status'],
+                    'log'       => (int)$data['log'],
+                    'sort'      => (int)$data['sort']
+                );
+                $this->db->update("map",$where,$fields);
+            }
+        }else{
+            $fields = array(
+                'parent_id' => (int)$data['parent_id'],
+                'note'      => is_array($data['note']) ? json_encode($data['note']) : '',
+                'function'  => trim($data['function'],"/"),
+                'class'     => trim($data['class'],"/"),
+                'catalog'   => trim($data['catalog'],"/"),
+                'ignore'    => (int)$data['ignore'],
+                'status'    => (int)$data['status'],
+                'log'       => (int)$data['log'],
+                'sort'      => (int)$data['sort']
+            );
+            $node_id = $this->db->insert("map",$fields);
+        }
+
+        return $node_id;
+    }
+
+    public function deleteNode($node_id) {
+
+        $all_nodes = array_merge($this->getAllChildrenNodesByRecursion($node_id),array($node_id));
+        $this->db->delete("map",array('node_id' => array( 'logic'=> 'in', 'value'=>implode(',',$all_nodes ) ) ) );
+        return count($all_nodes);
+    }
+
+    function getAllChildrenNodesByRecursion($parent_id){
+        $result= array();
+        $nodes = $this->getNodesByParentId($parent_id);
+        if($nodes){
+            foreach ($nodes as $item) {
+                if($item['node_id']){
+                    $result = array_merge(
+                        (array)array_merge($this->getAllChildrenNodesByRecursion($item['node_id']),array($item['node_id'])),
+                        $result
+                    );
+                }
+            }
+        }
+        return $result;
+    }
+
+    function getNodesByParentId($parent_id){
+        $menu_node_query = $this->db->query("SELECT * FROM ".DB_PREFIX."map WHERE parent_id = '".(int)$parent_id."' ORDER BY sort ASC ,node_id ASC");
+        return $menu_node_query->rows;
+    }
+
+    public function getParentNodes($node_id){
+        $title = array();
+        $parents = $this->getAllParentNodesByRecursion($node_id);
+        unset($parents[count($parents)-1]);
+        if(count($parents)){
+            foreach ($parents as $item) {
+                $title[] = $item['title'];
+
+                $languages = json_decode($title,true);
+                if (is_array($languages) && !empty($languages[$this->config->get('config_language')])) {
+                    $title[] = $languages[$this->config->get('config_language')];
+                }
+            }
+        }
+        return implode("/",$title);
+    }
+
+    function getAllParentNodesByRecursion($node_id){
+        $result = array();
+        $node =$this->getNode((int)$node_id);
+        if(isset($node['parent_id'])){
+            $result = array_merge(
+                (array)$this->getAllParentNodesByRecursion($node['parent_id']),
+                array($node)
+            );
+        }
+        return $result;
+    }
+
+    public function getNodeTree($node_id=null ){
+        $children = $this->getChildren( $node_id );
+        foreach($children as $child ){
+            $this->_nodes[$child['parent_id']][] = $child;
+        }
+        return $this->nodesFormat(0);
+    }
+
+    private function nodesFormat($parent_id=0){
+        $nodes = array();
+        if($this->hasChildren($parent_id)){
+            $results = $this->getNodes($parent_id);
+            foreach( $results as $result ){
+                $note = $result['note'];
+                $languages = json_decode($note,true);
+                if (!is_array($languages) || empty($languages[$this->config->get('config_language')])) {
+                    $languages = array($this->config->get('config_language')=>$note);
+                }
+                if(!empty($result['function'])){
+                    $name = $result['function'];
+                }else if(!empty($result['class'])){
+                    $name = $result['class'];
+                }else{
+                    $name = $result['catalog'];
+                }
+                $tmp = array(
+                    'node_id'   => $result['node_id'],
+                    'name'      => $name,
+                    'p_id'      => $result['parent_id'],
+                    'function'  => !empty($result['function']) ? trim($result['function']) : '',
+                    'class'     => !empty($result['class']) ? trim($result['class']) : '',
+                    'catalog'   => !empty($result['catalog']) ? trim($result['catalog']) : '',
+                    'lang'      => $languages ,
+                    'status'    => $result['status'],
+                    'ignore'    => $result['ignore'],
+                    'sort'      => isset($result['sort']) ? (int)$result['sort'] : 0,
+                    'note'      => $result['note']
+                );
+                if($this->hasChildren($result['node_id'])){
+                    $tmp['children'] = $this->nodesFormat( $result['node_id'] );
+                }
+                $nodes[] = $tmp;
+            }
+            return $nodes;
+        }
+        return ;
+    }
+
+    function getNode($data){
+        $where = array();
+        if(isset($data['node_id'])){
+            $where['node_id'] = $data['node_id'];
+        }
+        if(isset($data['catalog'])){
+            $where['catalog'] = $data['catalog'];
+        }
+        if(isset($data['class'])){
+            $where['class'] = $data['class'];
+        }
+        if(isset($data['function'])){
+            $where['function'] = $data['function'];
+        }
+        if(isset($data['parent_id'])){
+            $where['parent_id'] = (int)$data['parent_id'];
+        }
+        return $this->db->fetch("map",array('one'=>true,'condition'=>$where));
+
+    }
+
+    private function getChildren($node_id=null){
+        $sql = "SELECT * FROM ".DB_PREFIX."map ";
+        if( $node_id != null ) {
+            $sql .= ' WHERE parent_id='.(int)$node_id;
+        }
+        $sql .= ' ORDER BY `parent_id` ,`sort` ';
+        $query = $this->db->query( $sql );
+        return $query->rows;
+    }
+
+    private function hasChildren($node_id){
+        return isset($this->_nodes[$node_id]);
+    }
+
+    private function getNodes($node_id){
+        return $this->_nodes[$node_id];
+    }
+
+    public function syncActionNodes($data,$base_node = false){
+
+        if(is_array($data)){
+            if($base_node){
+                $this->db->delete("map",array('parent_id'=>(int)$base_node));
+            }else{
+                $this->db->query("TRUNCATE TABLE ".DB_PREFIX."map");
+            }
+            foreach ($data as $mkey => $module) {
+                if(isset($module['level']) && $module['level'] == 1){
+                    if(!$module['insert'] && $base_node){
+                        $m_id = $base_node;
+                    }else{
+                        $tmp = array(
+                            'parent_id' => 0,
+                            'catalog'   => ( isset($module['catalog']) ? $module['catalog'] : '' ),
+                            'ignore'    => ( isset($module['ignore']) ? $module['ignore'] : 0 ),
+                            'status'    => 1,
+                            'sort'      => ($mkey+1),
+                            'note'      => $module['note']
+                        );
+                        $m_id = $this->db->insert("map", $tmp);
+                    }
+                    if(isset($module['children'])){
+                        foreach ($module['children'] as $ckey => $controller) {
+                            if(isset($controller['level']) && $controller['level'] == 2){
+                                if(!$controller['insert'] && $base_node){
+                                    $c_id = $base_node;
+                                }else{
+                                    $tmp = array(
+                                        'parent_id' => (int)$m_id,
+                                        'class'     => ( isset($controller['class']) ? $controller['class'] : '' ),
+                                        'catalog'   => ( isset($controller['catalog']) ? $controller['catalog'] : '' ),
+                                        'ignore'    => ( isset($controller['ignore']) ? $controller['ignore'] : 0 ),
+                                        'status'    => 1,
+                                        'sort'      => ($ckey+1),
+                                        'note'      => $controller['note']
+                                    );
+                                    $c_id = $this->db->insert("map", $tmp );
+                                }
+                                if(isset($controller['children'])){
+                                    foreach ($controller['children'] as $akey => $action) {
+                                        if(isset($action['level']) && $action['level'] == 3){
+                                            $tmp = array(
+                                                'parent_id' => (int)$c_id,
+                                                'function'  => ( isset($action['function']) ? $action['function'] : '' ),
+                                                'class'     => ( isset($action['class']) ? $action['class'] : '' ),
+                                                'catalog'   => ( isset($action['catalog']) ? $action['catalog'] : '' ),
+                                                'ignore'    => ( isset($action['ignore']) ? $action['ignore'] : 0 ),
+                                                'status'    => 1,
+                                                'sort'      => ($akey+1),
+                                                'note'      => $action['note']
+                                            );
+                                            $a_id = $this->db->insert("map", $tmp );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return $this->db->getLastId();
+        }
+    }
+
+}

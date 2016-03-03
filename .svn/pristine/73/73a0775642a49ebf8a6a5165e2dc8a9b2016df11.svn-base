@@ -1,0 +1,795 @@
+<?php
+class ControllerServiceAdvertisePost extends Controller {
+	private $error = array();
+
+	public function index() {
+		$this->load->language('service/advertise_post');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->document->addStyle(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.css');
+		$this->document->addScript(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.js');
+
+		$this->load->model('service/advertise_post');
+
+		$this->getList();
+	}
+
+	public function edit() {
+		$this->load->language('service/advertise_post');
+
+		$this->load->model('service/advertise_post');
+		$json = array('status'=>0,'msg'=>$this->language->get('text_exception'));
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate('service/advertise_post/edit')) {
+			$data=$this->request->post;
+			if (strlen($_POST['headline']) >25 || strlen($_POST['text'])>90){
+				$json['status'] = 0;
+				$json['msg']    = $this->language->get('text_headline_text');
+			}else{
+				$result = $this->model_service_advertise_post->editAdvertisePost($this->request->get['post_id'],$data);
+					
+				if($result == -1){
+					$json['status'] = 0;
+					$json['msg']    = $this->language->get('text_locked');
+				}else if($result == -2){
+					$json['status'] = 0;
+					$json['msg']    = $this->language->get('text_no_targeting');
+				}else if($result){
+					$this->session->data['success'] = $this->language->get('text_success');
+					$json = array('status'=>1,'msg'=>$this->language->get('text_success'));
+				}
+			}
+		}
+
+		$this->response->setOutput(json_encode($json));
+	}
+	public function approve(){
+		$this->load->language('service/advertise_post');
+		$this->load->model('service/advertise');
+		$post_id = isset($this->request->get['post_id']) ? (int)$this->request->get['post_id'] : false;
+		$result = $this->model_service_advertise->componentApprove($post_id,$this->request->post,'post');
+		if($result == -1){
+			$this->session->data['success'] = $this->language->get('text_locked');
+		}else if($result == -2){
+			$json['status'] = 0;
+			$json['msg']    = $this->language->get('text_no_targeting');
+		}else if($result){
+			$this->model_service_advertise->autoPublishWaiting($post_id,'post');
+
+			$this->model_service_advertise->lockAdvertiseComponent($post_id,'post',true,true);
+			$this->session->data['success'] = $this->language->get('text_success');
+		}
+		$this->response->redirect($this->url->link('service/advertise_post/detail','token='.$this->session->data['token'].'&post_id='.$this->request->get['post_id'],'SSL'));
+	}
+	public function delete() {
+		$this->load->language('service/advertise_post');
+		$json = array('status'=>0,'msg'=>$this->language->get('text_exception'));
+		$this->load->model('service/advertise_post');
+
+		if (isset($this->request->get['post_id']) && $this->validate('service/advertise_post/delete')) {
+			$this->model_service_advertise_post->deleteAdvertisePost($this->request->get['post_id']);
+			$json = array('status'=>1,'msg'=>$this->language->get('text_success'));
+		}
+		$this->response->setOutput(json_encode($json));
+	}
+
+	protected function getList() {
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$filter_advertise_sn = $this->request->get['filter_advertise_sn'];
+		} else {
+			$filter_advertise_sn = null;
+		}
+		if (isset($this->request->get['filter_post_sn'])) {
+			$filter_post_sn = $this->request->get['filter_post_sn'];
+		} else {
+			$filter_post_sn = null;
+		}
+		if (isset($this->request->get['filter_customer_id'])) {
+			$filter_customer_id = $this->request->get['filter_customer_id'];
+		} else {
+			$filter_customer_id = null;
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$filter_target_url = $this->request->get['filter_target_url'];
+		} else {
+			$filter_target_url = null;
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$filter_status = $this->request->get['filter_status'];
+		} else {
+			$filter_status = null;
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$filter_from = $this->request->get['filter_from'];
+		} else {
+			$filter_from = null;
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$filter_in_charge = $this->request->get['filter_in_charge'];
+		} else {
+			$filter_in_charge = null;
+		}
+		if (isset($this->request->get['filter_author'])) {
+			$filter_author = $this->request->get['filter_author'];
+		} else {
+			$filter_author = null;
+		}
+		if (isset($this->request->get['filter_modified_start'])) {
+			$filter_modified_start = $this->request->get['filter_modified_start'];
+		} else {
+			$filter_modified_start = null;
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$filter_modified_end = $this->request->get['filter_modified_end'];
+		} else {
+			$filter_modified_end = null;
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$sort = $this->request->get['sort'];
+		} else {
+			$sort = 'ap.date_modified';
+		}
+
+		if (isset($this->request->get['order'])) {
+			$order = $this->request->get['order'];
+		} else {
+			$order = 'DESC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$page = $this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+		if (isset($this->request->get['filter_post_sn'])) {
+			$url .= '&filter_post_sn=' . urlencode(html_entity_decode($this->request->get['filter_post_sn'], ENT_QUOTES, 'UTF-8'));
+		}
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_author'])) {
+			$url .= '&filter_author=' . $this->request->get['filter_author'];
+		}
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . $url, 'SSL')
+		);
+		$limit = $this->config->get('config_limit_admin');
+		$data['add'] = $this->url->link('service/advertise_post/add', 'token=' . $this->session->data['token'], 'SSL');
+
+		$data['posts'] = array();
+
+		$filter_data = array(
+			'filter_advertise_sn'   => $filter_advertise_sn,
+			'filter_post_sn'	   	=> $filter_post_sn,
+			'filter_customer_id'	=> $filter_customer_id,
+			'filter_status'	  		=> $filter_status,
+			'filter_from'	  		=> $filter_from,
+			'filter_in_charge'	  	=> $filter_in_charge,
+			'filter_author'	  		=> $filter_author,
+			'filter_target_url'  	=> $filter_target_url,
+			'filter_modified_start' => $filter_modified_start,
+			'filter_modified_end' 	=> $filter_modified_end,
+			'sort'                 => $sort,
+			'order'                => $order,
+			'start'                => ($page - 1) * $limit,
+			'limit'                => $limit
+		);
+
+		$total = $this->model_service_advertise_post->getTotalAdvertisePosts($filter_data);
+
+		$results = $this->model_service_advertise_post->getAdvertisePosts($filter_data);
+		$this->load->model('catalog/product');
+		$this->load->model('customer/customer');
+		foreach ($results as $result) {
+
+			$product_info = $this->model_catalog_product->getProduct($result['product_id']);
+			if(empty($product_info['name'])){
+				$product = sprintf(getBSTagStyle(2),$this->language->get('text_unknown'));
+			}else{
+				$product = sprintf(getBSTagStyle(0),$product_info['name']);
+			}
+			$data['posts'][] = array(
+				'post_id'  		=> $result['post_id'],
+				'post_sn'      	=> $result['post_sn'],
+				'product'		=> $product,
+				'advertise_id'  => $result['advertise_id'],
+				'advertise_sn'  => $result['advertise_sn'],
+				'target_url'    => $result['target_url'],
+				'customer'      => $result['customer'],
+				'company'       => $result['company'],
+				'status'        => $result['status'],
+				'status_text'   => sprintf(getBSTagStyle($result['status'],'status'),$result['status_text']),
+				'headline'      => htmlspecialchars_decode($result['headline']),
+				'charger'      	=> $result['charger'],
+				'author'      	=> $result['author'],
+				'from'        	=> $result['from']=='member' ? $this->language->get('entry_from_member') : $this->language->get('entry_from_backend'),
+				'date_modified' => date('Y-m-d', strtotime($result['date_modified'])).'<br>'.date('H:i:s', strtotime($result['date_modified'])),
+				'edit'          => $this->url->link('service/advertise_post/detail', 'token=' . $this->session->data['token'] . '&post_id=' . $result['post_id'] . $url, 'SSL'),
+			);
+		}
+
+		$data['heading_title'] = $this->language->get('heading_title');
+
+		$data['text_list'] = $this->language->get('text_list');
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['text_confirm'] = $this->language->get('text_confirm');
+		$data['text_missing'] = $this->language->get('text_missing');
+
+		$data['column_target_url'] = $this->language->get('column_target_url');
+		$data['column_ad_sn'] = $this->language->get('column_ad_sn');
+		$data['column_customer'] = $this->language->get('column_customer');
+		$data['column_post_id'] = $this->language->get('column_post_id');
+		$data['column_from'] = $this->language->get('column_from');
+		$data['column_headline'] = $this->language->get('column_headline');
+		$data['column_status'] = $this->language->get('column_status');
+		$data['column_in_charge'] = $this->language->get('column_in_charge');
+		$data['column_date_modified'] = $this->language->get('column_date_modified');
+		$data['column_author'] = $this->language->get('column_author');
+		$data['column_action'] = $this->language->get('column_action');
+
+		$data['entry_advertise_id'] = $this->language->get('entry_advertise_id');
+		$data['entry_advertise_sn'] = $this->language->get('entry_advertise_sn');
+		$data['entry_post_sn'] = $this->language->get('entry_post_sn');
+		$data['entry_product'] = $this->language->get('entry_product');
+		$data['entry_customer'] = $this->language->get('entry_customer');
+		$data['entry_status'] = $this->language->get('entry_status');
+		$data['entry_from'] = $this->language->get('entry_from');
+		$data['entry_target_url'] = $this->language->get('entry_target_url');
+		$data['entry_modified_start'] = $this->language->get('entry_modified_start');
+		$data['entry_modified_end'] = $this->language->get('entry_modified_end');
+		$data['entry_from_member'] = $this->language->get('entry_from_member');
+		$data['entry_from_backend'] = $this->language->get('entry_from_backend');
+		$data['entry_in_charge'] = $this->language->get('entry_in_charge');
+		$data['entry_author'] = $this->language->get('entry_author');
+
+		$data['button_filter'] = $this->language->get('button_filter');
+		$data['button_view'] = $this->language->get('button_view');
+
+
+		$data['token'] = $this->session->data['token'];
+
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->session->data['success'])) {
+			$data['success'] = $this->session->data['success'];
+
+			unset($this->session->data['success']);
+		} else {
+			$data['success'] = '';
+		}
+
+		if (isset($this->request->post['selected'])) {
+			$data['selected'] = (array)$this->request->post['selected'];
+		} else {
+			$data['selected'] = array();
+		}
+
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+		if (isset($this->request->get['filter_post_sn'])) {
+			$url .= '&filter_post_sn=' . urlencode(html_entity_decode($this->request->get['filter_post_sn'], ENT_QUOTES, 'UTF-8'));
+		}
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_author'])) {
+			$url .= '&filter_author=' . $this->request->get['filter_author'];
+		}
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if ($order == 'ASC') {
+			$url .= '&order=DESC';
+		} else {
+			$url .= '&order=ASC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+		$data['sort_post_sn'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.post_sn' . $url, 'SSL');
+		$data['sort_advertise'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.advertise_id' . $url, 'SSL');
+		$data['sort_customer'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.in_charge' . $url, 'SSL');
+		$data['sort_in_charge'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.user_id' . $url, 'SSL');
+		$data['sort_author'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=customer' . $url, 'SSL');
+		$data['sort_from'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.from' . $url, 'SSL');
+		$data['sort_status'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.status' . $url, 'SSL');
+		$data['sort_date_added'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.date_added' . $url, 'SSL');
+		$data['sort_date_modified'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . '&sort=ap.date_modified' . $url, 'SSL');
+
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+		if (isset($this->request->get['filter_post_sn'])) {
+			$url .= '&filter_post_sn=' . urlencode(html_entity_decode($this->request->get['filter_post_sn'], ENT_QUOTES, 'UTF-8'));
+		}
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_author'])) {
+			$url .= '&filter_author=' . $this->request->get['filter_author'];
+		}
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		$pagination = new Pagination();
+		$pagination->total = $total;
+		$pagination->page = $page;
+		$pagination->limit = $limit;
+		$pagination->url = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . $url . '&page={page}', 'SSL');
+
+		$data['pagination'] = $pagination->render();
+
+		$data['results'] = sprintf($this->language->get('text_pagination'), ($total) ? (($page - 1) * $limit) + 1 : 0, ((($page - 1) * $limit) > ($total - $limit)) ? $total : ((($page - 1) * $limit) + $limit), $total, ceil($total / $limit));
+
+		$data['filter_advertise_sn'] = $filter_advertise_sn;
+		$data['filter_post_sn'] = $filter_post_sn;
+		$data['filter_customer_id'] = $filter_customer_id;
+		$data['filter_status'] = $filter_status;
+		$data['filter_from'] = $filter_from;
+		$data['filter_target_url'] = $filter_target_url;
+		$data['filter_in_charge'] = $filter_in_charge;
+		$data['filter_author'] = $filter_author;
+		$data['filter_modified_start'] = $filter_modified_start;
+		$data['filter_modified_end'] = $filter_modified_end;
+		$data['filter_customer'] = '';
+		if($filter_customer_id){
+			$customer = $this->model_customer_customer->getCustomer($filter_customer_id);
+			$data['filter_customer'] = empty($customer['username']) ? '' : $customer['username'].' '.$customer['nickname'];
+		}
+		$this->load->model('localisation/advertise_post');
+		$data['post_statuses'] = $this->model_localisation_advertise_post->getAdvertisePosts();
+		$this->load->model('user/user');
+		$data['contributors'] = $this->model_user_user->getUsersByGroupKey('contributor');
+
+		$data['sort'] = $sort;
+		$data['order'] = $order;
+
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+
+		$this->response->setOutput($this->load->view('service/advertise_post_list.tpl', $data));
+	}
+
+	public function detail() {
+		$this->load->language('service/advertise_post');
+		$this->load->model('service/advertise_post');
+		$this->load->model('service/advertise');
+		$this->load->model('tool/image');
+		$this->document->setTitle($this->language->get('text_edit'));
+		$this->document->addStyle(TPL_JS.'formvalidation/dist/css/formValidation.css');
+		$this->document->addScript(TPL_JS.'formvalidation/dist/js/formValidation.js');
+		$this->document->addScript(TPL_JS.'formvalidation/dist/js/framework/bootstrap.min.js');
+
+		$this->document->addScript(TPL_JS.'jquery.maxlength.min.js');
+
+		$data['heading_title'] = $this->language->get('heading_title');
+		$data['text_form'] = $this->language->get('text_edit');
+		$data['text_approve'] = $this->language->get('text_approve');
+		$data['text_targeting'] = $this->language->get('text_targeting');
+		$data['text_post'] = $this->language->get('text_post');
+		$data['text_photo'] = $this->language->get('text_photo');
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['text_default'] = $this->language->get('text_default');
+		$data['text_select'] = $this->language->get('text_select');
+		$data['text_none'] = $this->language->get('text_none');
+		$data['text_loading'] = $this->language->get('text_loading');
+		$data['text_history'] = $this->language->get('text_history');
+
+		$data['text_confirm_save'] = $this->language->get('text_confirm_save');
+		$data['text_confirm_reset'] = $this->language->get('text_confirm_reset');
+		$data['text_confirm_relax'] = $this->language->get('text_confirm_relax');
+
+		$data['error_headline'] = $this->language->get('error_headline');
+		$data['error_headline_length'] = $this->language->get('error_headline_length');
+		$data['error_text'] = $this->language->get('error_text');
+		$data['error_text_length'] = $this->language->get('error_text_length');
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+		if (isset($this->request->get['filter_post_sn'])) {
+			$url .= '&filter_post_sn=' . urlencode(html_entity_decode($this->request->get['filter_post_sn'], ENT_QUOTES, 'UTF-8'));
+		}
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_author'])) {
+			$url .= '&filter_author=' . $this->request->get['filter_author'];
+		}
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . $url, 'SSL')
+		);
+		$data['cancel'] = $this->url->link('service/advertise_post', 'token=' . $this->session->data['token'] . $url, 'SSL');
+		$data['action'] = $this->url->link('service/advertise_post/edit', 'post_id='.$this->request->get['post_id'].'&token=' . $this->session->data['token'] , 'SSL');
+		$data['approve_form'] = $this->url->link('service/advertise_post/approve', 'post_id='.$this->request->get['post_id'].'&token=' . $this->session->data['token'] , 'SSL');
+		$data['mode_action'] = htmlspecialchars_decode($this->url->link('service/advertise/ajax_data','token='.$this->session->data['token'],'SSL'));
+		$data['tool_similar_action'] = htmlspecialchars_decode($this->url->link('tool/cron/similar_text','token='.$this->session->data['token'],'SSL'));
+
+		$post = $this->model_service_advertise_post->getAdvertisePost($this->request->get['post_id']);
+		$data['modify'] = $post['user_id'] == $this->user->getId();
+		$data['post_id'] = $post['post_id'];
+		$data['advertise_sn'] = $post['advertise_sn'];
+		$data['target_url'] = $post['target_url'];
+		$data['domain'] = $post['domain'];
+		$data['website_status'] = $post['website_status'];
+		$data['website_status_text'] = $post['website_status'] ? $this->language->get('text_active') : $this->language->get('text_stop');
+		$data['customer'] = $post['customer'];
+		$data['company'] = $post['company'];
+		$data['author'] = $post['author'];
+		$data['charger'] = $post['charger'];
+		$data['last_modified'] = $post['date_modified'];
+		$data['status'] = isset($post['status']) ? $post['status'] : 0;
+		$data['from'] = isset($post['from']) ? strtolower($post['from']) : 'member';
+		if(in_array($data['status'], $this->config->get('ad_post_levels'))){
+			$data['modify'] = false;
+		}
+
+		$data['approve'] = $data['reset'] = false;
+		if($post['in_charge'] == $this->user->getId() || in_array($this->user->getId(), $this->config->get('ad_group_manager'))){
+			$data['approve'] = in_array($post['status'], array_merge($this->config->get('ad_post_levels'),array($this->config->get('ad_post_review')))) ;
+			$data['modify'] = $data['reset'] = !in_array($post['status'], $this->config->get('ad_post_levels'));
+		}
+
+		$data['locked'] = $data['unblocked'] = false;
+		if(!empty($post['locker'])){
+			if($post['locker'] == $this->user->getId()){
+				$data['locked'] = false;
+			}else{
+				$data['locked'] = true;
+				$data['text_lock'] = sprintf($this->language->get('text_lock'),$post['keyer']);
+				if(($this->user->getId() == $post['in_charge']) || in_array($this->user->getId(),$this->config->get('ad_group_manager'))){
+					$data['unblocked'] = true;
+				}
+			}
+		}else if(($this->user->getId() == $post['user_id']) || ($this->user->getId() == $post['in_charge']) || in_array($this->user->getId(),$this->config->get('ad_group_manager'))){
+			$this->model_service_advertise->lockAdvertiseComponent((int)$post['post_id'] ,'post');
+		}
+		if($data['locked']){
+			$data['modify'] = $data['approve'] = $data['reset'] = false;
+		}
+		if(!$post['website_status']){
+			$data['locked'] = true;
+			$data['modify'] = $data['unblocked'] = $data['approve'] = $data['reset'] = false;
+			$data['text_lock'] = $this->language->get('text_website_status');
+		}
+
+		$data['headline'] = isset($post['headline']) ? $post['headline'] : '';
+		$data['text'] = isset($post['text']) ? $post['text'] : '';
+
+		$data['ad_note'] = isset($post['ad_note']) ? $post['ad_note'] : '';
+		$data['note'] = isset($post['note']) ? $post['note'] : '';
+		$data['entry_advertise_sn'] = $this->language->get('entry_advertise_sn');
+		$data['entry_customer'] = $this->language->get('entry_customer');
+		$data['entry_post_sn'] = $this->language->get('entry_post_sn');
+		$data['entry_product'] = $this->language->get('entry_product');
+		$data['entry_from'] = $this->language->get('entry_from');
+		$data['entry_target_url'] = $this->language->get('entry_target_url');
+		$data['entry_in_charge'] = $this->language->get('entry_in_charge');
+		$data['entry_headline'] = $this->language->get('entry_headline');
+		$data['entry_post_text'] = $this->language->get('entry_post_text');
+		$data['entry_note'] = $this->language->get('entry_note');
+		$data['entry_status'] = $this->language->get('entry_status');
+		$data['entry_author'] = $this->language->get('entry_author');
+		$data['entry_from'] = $this->language->get('entry_from');
+		$data['entry_from_member'] = $this->language->get('entry_from_member');
+		$data['entry_from_backend'] = $this->language->get('entry_from_backend');
+
+		$data['entry_location'] = $this->language->get('entry_location');
+		$data['entry_other_location'] = $this->language->get('entry_other_location');
+		$data['entry_language'] = $this->language->get('entry_language');
+		$data['entry_lother_anguage'] = $this->language->get('entry_other_language');
+		$data['entry_gender'] = $this->language->get('entry_gender');
+		$data['entry_age'] = $this->language->get('entry_age');
+		$data['advertise_id'] =$post['advertise_id'];
+
+
+		$targeting = $this->model_service_advertise_post->getAdvertiseTargeting($data['advertise_id']);
+		$location = $language = array();
+		if(isset($targeting['location'])){
+			$location = explode(",", $targeting['location']);
+		}
+		if(isset($targeting['language'])){
+			$language = explode(",", $targeting['language']);
+		}
+		$data['location'] = is_array($location) ? $location : array();
+		$data['other_location'] = isset($targeting['other_location']) ? $targeting['other_location'] : '';
+		$data['language'] = is_array($language) ? $language : array();
+		$data['other_language'] = isset($targeting['other_language']) ? $targeting['other_language'] : '';
+		$data['gender'] = isset($targeting['gender']) ? $targeting['gender'] : '';
+		$data['age_min'] = isset($targeting['age_min']) ? $targeting['age_min'] : '';
+		$data['age_max'] = isset($targeting['age_max']) ? $targeting['age_max'] : '';
+		$data['targeting_status'] = sprintf(getBSTagStyle($targeting['status'],'status'),$targeting['name']);
+
+		$data['entry_advertise'] = $this->language->get('entry_advertise');
+		$data['entry_website'] = $this->language->get('entry_website');
+		$data['entry_date_added'] = $this->language->get('entry_date_added');
+
+		$photo = $this->model_service_advertise_post->getAdvertisePhoto($data['advertise_id']);
+		$data['file'] = '';
+		if(!empty($photo['file'])){
+			$files = json_decode($photo['file'],true);
+			if(is_array($files)){
+				$file = array();
+				foreach ($files as $item) {
+					$file[] = array(
+						'realpath' => HTTP_CATALOG.substr($item['path'],strpos($item['path'],'/')+1),
+						'name' => $item['name'],
+						'path' => $item['path'],
+						'image'	=> $this->model_tool_image->resize($item['path'], 470, 245,true)
+					);
+				}
+				$data['file'] = $file;
+			}
+		}
+		$data['entry_photo'] = $this->language->get('entry_photo');
+
+		$data['photo_note'] = isset($photo['note']) ? $photo['note'] : '';
+		$data['photo_status'] = sprintf(getBSTagStyle($photo['status'],'status'),$photo['name']);
+
+		$data['button_update'] = $this->language->get('button_update');
+		$data['button_save'] = $this->language->get('button_save');
+		$data['button_unlock'] = $this->language->get('button_unlock');
+		$data['button_reset'] = $this->language->get('button_reset');
+		$data['button_cancel'] = $this->language->get('button_cancel');
+
+		$data['tab_advertise'] = $this->language->get('tab_advertise');
+		$data['tab_post'] = $this->language->get('tab_post');
+
+		$data['tab_history'] = $this->language->get('tab_history');
+		$data['token'] = $this->session->data['token'];
+		if (isset($this->session->data['success'])) {
+			$data['success'] = $this->session->data['success'];
+
+			unset($this->session->data['success']);
+		} else {
+			$data['success'] = '';
+		}
+		if (isset($this->session->data['warning'])) {
+			$data['error_warning'] = $this->session->data['warning'];
+
+			unset($this->session->data['warning']);
+		} else {
+			$data['error_warning'] = '';
+		}
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+		$this->load->model('localisation/targeting');
+		$data['locations'] = $this->model_localisation_targeting->getTargetingsByCategory('location');
+		$data['genders'] = $this->model_localisation_targeting->getTargetingsByCategory('gender');
+		$data['languages'] = $this->model_localisation_targeting->getTargetingsByCategory('language');
+
+		$this->load->model('localisation/advertise_post');
+		$data['post_statuses'] = $this->model_localisation_advertise_post->getAdvertisePosts();
+		$status = $this->model_localisation_advertise_post->getAdvertisePost($data['status']);
+		if($status){
+			$data['status_text'] = sprintf(getBSTagStyle($status['status_id'],'status'),$status['name']);
+		}else{
+			$data['status_text'] = sprintf(getBSTagStyle(0,'status'),$this->language->get('text_unknown'));
+		}
+		$this->load->model('catalog/product');
+		$product_info = $this->model_catalog_product->getProduct($post['product_id']);
+		if(empty($product_info['name'])){
+			$data['product'] = sprintf(getBSTagStyle(2),$this->language->get('text_unknown'));
+		}else{
+			$data['product'] = sprintf(getBSTagStyle(0),$product_info['name']);
+		}
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+		$this->response->setOutput($this->load->view('service/advertise_post_form.tpl', $data));
+	}
+
+	protected function validate($route) {
+		if (!$this->user->hasPermission($route)) {
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		return !$this->error;
+	}
+
+	public function history() {
+		$this->load->language('service/advertise_post');
+		$this->load->model('service/advertise_post');
+
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['column_date_added'] = $this->language->get('column_date_added');
+		$data['column_status'] = $this->language->get('column_status');
+		$data['column_operator'] = $this->language->get('column_operator');
+		$data['column_note'] = $this->language->get('column_note');
+		$data['column_from'] = $this->language->get('column_from');
+
+		if (isset($this->request->get['page'])) {
+			$page = $this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$data['histories'] = array();
+
+		$this->load->model('service/advertise_post');
+
+		$results = $this->model_service_advertise_post->getAdvertisePostHistories($this->request->get['post_id'], ($page - 1) * 10, 10);
+
+		foreach ($results as $result) {
+			$operator = $this->language->get('text_author');
+			if($result['customer_id']){
+				$operator = $this->language->get('text_customer');
+			}else if($result['in_charge']){
+				$operator = $this->language->get('text_in_charge');
+			}
+			$data['histories'][] = array(
+				'operator' 	=> $operator,
+				'from'      => $result['from']=='member' ? $this->language->get('entry_from_member') : $this->language->get('entry_from_backend'),
+				'status'   	=> $result['status'],
+				'note'    	=> nl2br($result['note']),
+				'date_added'=> date('Y-m-d', strtotime($result['date_added'])).'<br>'. date('H:i:s', strtotime($result['date_added']))
+			);
+		}
+
+		$history_total = $this->model_service_advertise_post->getTotalAdvertisePostHistories($this->request->get['post_id']);
+
+		$pagination = new Pagination();
+		$pagination->total = $history_total;
+		$pagination->page = $page;
+		$pagination->limit = 10;
+		$pagination->url = $this->url->link('service/advertise_post/history', 'token=' . $this->session->data['token'] . '&post_id=' . $this->request->get['post_id'] . '&page={page}', 'SSL');
+
+		$data['pagination'] = $pagination->render();
+
+		$data['results'] = sprintf($this->language->get('text_pagination'), ($history_total) ? (($page - 1) * 10) + 1 : 0, ((($page - 1) * 10) > ($history_total - 10)) ? $history_total : ((($page - 1) * 10) + 10), $history_total, ceil($history_total / 10));
+
+		$this->response->setOutput($this->load->view('service/advertise_post_history.tpl', $data));
+
+	}
+}

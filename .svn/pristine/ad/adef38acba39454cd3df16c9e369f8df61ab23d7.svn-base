@@ -1,0 +1,30 @@
+<?php
+// Heading
+$_['heading_title']     = 'Permission Module Management';
+
+// Text
+$_['text_success']      = 'Success: You have modified the Permission Module!';
+$_['text_list']         = 'User Module List';
+$_['text_add']          = 'Add Permission Module';
+$_['text_edit']         = 'Edit Permission Module';
+$_['text_expand_collapse']         = 'expand/collapse';
+
+// Column
+$_['column_name']       = 'Permission Module Name';
+$_['column_decription']       = 'Decription';
+$_['column_action']     = 'Action';
+
+// Entry
+$_['entry_name']        = 'Permission Module Name';
+$_['entry_decription']        = 'Permission Module Decription';
+$_['entry_users']       = 'Members';
+$_['entry_permission']  = 'Permissions';
+$_['entry_access']      = 'Access Permission';
+$_['entry_modify']      = 'Modify Permission';
+$_['entry_log']         = 'Log Permission';
+// Error
+$_['error_permission']  = 'Warning: You do not have permission to modify Permission Module Management!';
+$_['error_name']        = 'User Group Name must be between 3 and 64 characters!';
+$_['error_decription']        = 'User Module Decription must be between 3 and 64 characters!';
+$_['error_user']        = 'Warning: This user group cannot be deleted as it is currently assigned to %s users!';
+$_['text_admin_group']  = '<div class="alert alert-info">This Group Has All Permission Nodes! No additional set permissions!</div>';

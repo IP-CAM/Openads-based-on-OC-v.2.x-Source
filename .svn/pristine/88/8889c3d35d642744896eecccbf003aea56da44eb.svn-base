@@ -1,0 +1,282 @@
+<?php echo $header; ?><?php echo $column_left; ?>
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <?php if($is_in_charge && false){ ?>
+        <button type="submit" form="form-order" data-toggle="tooltip" title="<?php echo $button_save; ?>" class="btn btn-primary"><i class="fa fa-save"></i></button>
+        <?php }?>
+        <a href="javascript:window.history.go(-1);" class="btn btn-default"><i class="fa fa-reply"></i> <?php echo $button_cancel; ?></a>
+      </div>
+      <h1><?php echo $heading_title; ?></h1>
+      <ul class="breadcrumb">
+        <?php foreach ($breadcrumbs as $breadcrumb) { ?>
+        <li><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a></li>
+        <?php } ?>
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <?php if ($error_warning) { ?>
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $error_warning; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <?php if ($success) { ?>
+    <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo $success; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-pencil"></i> <?php echo $text_form; ?></h3>
+      </div>
+      <div class="panel-body">
+          <?php if($advertise_id){ ?>
+          <ul class="nav nav-tabs">
+            <li class="active">
+              <a href="#tab-general" data-toggle="tab"><?php echo $tab_general; ?></a>
+            </li>
+            <li><a href="#tab-history" data-toggle="tab"><?php echo $tab_history; ?></a></li>
+            <li><a href="#tab-tracking" data-toggle="tab"><?php echo $tab_tracking; ?></a></li>
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane active" id="tab-general">
+              <div class="row">
+                <div class="col-sm-2">
+                  <ul class="nav nav-pills nav-stacked" id="ad">
+                    <li class="active">
+                      <a href="#tab-advertise" data-toggle="tab"><?php echo $tab_general; ?></a>
+                    </li>
+                    <li>
+                      <a href="#tab-targeting" data-toggle="tab"><?php echo $tab_targeting; ?></a>
+                    </li>
+                    <li>
+                      <a href="#tab-post" data-toggle="tab"><?php echo $tab_post; ?></a>
+                    </li>
+                    <li>
+                      <a href="#tab-photo" data-toggle="tab"><?php echo $tab_photo; ?></a>
+                    </li>
+                  </ul>
+                </div>
+                <div class="col-sm-10">
+                  <div class="tab-content">
+                    <div class="tab-pane active" id="tab-advertise">
+              <?php }?>
+              <form class="form-horizontal" method="post" id="form-order">
+              <?php if($advertise_id){ ?>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_product; ?></label>
+                <div class="col-sm-10">
+                  <pre> <?php echo $product; ?> </pre>
+                </div>
+              </div>
+              <?php }?>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_advertise_sn; ?></label>
+                <div class="col-sm-10">
+                  <pre><?php echo $advertise_sn; ?></pre>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_customer; ?></label>
+                <div class="col-sm-10">
+                  <pre> <?php echo $company; ?> <i><?php echo $customer; ?></i> </pre>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_website; ?></label>
+                <div class="col-sm-10">
+                    <span class="form-control" disabled><?php echo $website; ?></span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_in_charge; ?></label>
+                <div class="col-sm-10">
+                  <pre> <?php echo $charger; ?> </pre>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_publish; ?></label>
+                <div class="col-sm-7">
+                          <span class="form-control" disabled><?php echo $publish.' '.$publish_text; ?></span>
+                        </div>
+                  <div class="col-sm-3">
+                  <button type="button" id="button-terminate" class="btn btn-primary"><i class="fa fa-plus-circle"></i> <?php echo $button_terminate; ?></button>
+                  </div>      
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label" ><?php echo $entry_date_added; ?></label>
+                <div class="col-sm-10">
+                  <pre><?php echo $date_added; ?></pre>
+                </div>
+              </div>   
+              <div class="form-group">
+                <label class="col-sm-2 control-label" ><?php echo $entry_note; ?></label>
+                <div class="col-sm-10">
+                  <pre id="ad-note"><?php echo $note; ?></pre>
+                </div>
+              </div>            
+            </form>
+          <?php if($advertise_id){ ?>
+          </div>
+          <div class="tab-pane" id="tab-targeting"></div>
+          <div class="tab-pane" id="tab-post"></div>
+          <div class="tab-pane" id="tab-photo"></div>
+            </div>
+            </div>
+            </div>
+          </div>
+            <div class="tab-pane" id="tab-history">
+              <div id="history"></div>
+              <br />
+              <?php if($is_in_charge){ ?>
+              <fieldset>
+                <legend><?php echo $text_history; ?></legend>
+                <form class="form-horizontal">
+                  <div class="form-group">
+                    <label class="col-sm-2 control-label" for="input-publish"><?php echo $entry_publish; ?></label>
+                    <div class="col-sm-10">
+                      <select name="publish" id="input-publish" class="form-control">
+                        <?php foreach ($ad_publishes as $item) { ?>
+                        
+                        <option value="<?php echo $item['publish_id']; ?>" 
+                          <?php echo ($item['publish_id'] == $publish) ? 'selected' : '' ?> 
+                          <?php echo ($item['publish_id'] > $ad_publish_confirmed) ? 'disabled' : '' ?> 
+                          ><?php echo $item['name']; ?></option>
+                        <?php } ?>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="col-sm-2 control-label" for="input-notify"><?php echo $entry_notify; ?></label>
+                    <div class="col-sm-10">
+                      <input type="checkbox" name="notify" checked value="1" id="input-notify" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="col-sm-2 control-label" for="input-note"><?php echo $entry_note; ?></label>
+                    <div class="col-sm-10">
+                      <textarea name="note" rows="8" id="input-note" class="form-control"></textarea>
+                    </div>
+                  </div>
+                </form>
+                <div class="text-right">
+                  <button id="button-history" data-loading-text="<?php echo $text_loading; ?>" class="btn btn-primary"><i class="fa fa-plus-circle"></i> <?php echo $button_history_add; ?></button>
+                </div>
+              </fieldset>
+              <?php } ?>
+            </div>
+            <div class="tab-pane" id="tab-tracking">
+              <div id="timeline" style="background: #dddddd;background: rgba(0, 0, 0, 0.05);}"></div>
+            </div>
+          </div>
+          <?php } ?>
+      </div>
+    </div>
+  </div>
+<?php if($advertise_id){?>
+
+<script type="text/javascript"><!--
+
+$('#tab-targeting').load('index.php?route=service/advertise/component&token=<?php echo $token ?>',{mode:'targeting',advertise_id:'<?php echo $advertise_id; ?>',overview:1});
+$('#tab-post').load('index.php?route=service/advertise/component&token=<?php echo $token ?>',{mode:'post',advertise_id:'<?php echo $advertise_id; ?>',overview:1});
+$('#tab-photo').load('index.php?route=service/advertise/component&token=<?php echo $token ?>',{mode:'photo',advertise_id:'<?php echo $advertise_id; ?>',overview:1});
+$('#history').delegate('.pagination a', 'click', function(e) {
+  e.preventDefault();
+  $('#history').load(this.href);
+});
+
+$('#edit-link').bind('click',function(){
+  if(confirm('<?php echo $text_confirm_url ?>')){
+    $.ajax({
+      url:'index.php?route=service/advertise/ajax_data&token=<?php echo $token; ?>',
+      type: 'post',
+      data: {action:'targeturl',advertise_id:<?php echo $advertise_id; ?>,target_url:$('#ad-target-url').val()},
+      dataType: 'json',
+      success: function(json) {
+        if(json.status==1){
+          location.reload();
+        }else{
+          alert(json.msg);
+        }
+      }
+    });
+  }
+})
+$('#button-terminate').bind('click',function(){
+  if(confirm('<?php echo $text_confirm_terminate ?>')){
+    $.ajax({
+      url:'index.php?route=service/advertise/ajax_data&token=<?php echo $token; ?>',
+      type: 'post',
+      data: {action:'terminate',advertise_id:<?php echo $advertise_id; ?>},
+      dataType: 'json',
+      success: function(json) {
+        if(json.status==1){
+        	location.reload();
+        }else{
+          alert(json.msg);
+        }
+      }
+    });
+  }
+})
+$('#history').load('index.php?route=service/advertise/history&token=<?php echo $token; ?>&advertise_id=<?php echo $advertise_id; ?>');
+$('#button-history').on('click', function() {
+  $.ajax({
+    url: 'index.php?route=service/advertise/history&token=<?php echo $token; ?>&advertise_id=<?php echo $advertise_id; ?>',
+    type: 'post',
+    dataType: 'json',
+    data: 'publish=' + encodeURIComponent($('select[name=\'publish\']').val()) + '&notify=' + ($('input[name=\'notify\']').prop('checked') ? 1 : 0)  + '&note=' + encodeURIComponent($('#input-note').val()),
+    beforeSend: function() {
+      $('#button-history').button('loading');     
+    },
+    complete: function() {
+      $('#button-history').button('reset'); 
+    },
+    success: function(json) {
+
+      $('.alert').remove();
+      
+      if (json['error']) {
+        $('#history').before('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+      } 
+    
+      if (json['success']) {
+        $('#history').load('index.php?route=service/advertise/history&token=<?php echo $token; ?>&advertise_id=<?php echo $advertise_id; ?>');
+        
+        $('#history').before('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+
+        $('#ad-note').html($('input[name=\'note\']').val());
+
+        $('input[name=\'note\']').val('');
+        
+        $('#ad-publish').html($('select[name=\'publish\'] option:selected').text());
+
+      }     
+      return false;
+    },      
+    error: function(xhr, ajaxOptions, thrownError) {
+      alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+    }
+  });
+});
+//--></script> 
+<?php }?>
+<script type="text/javascript"><!--
+$('.date').datetimepicker({
+	pickTime: false
+});
+
+$('.datetime').datetimepicker({
+	pickDate: true,
+	pickTime: true
+});
+
+$('.time').datetimepicker({
+	pickDate: false
+});	
+
+$('#timeline').load('index.php?route=service/advertise/tracking&token=<?php echo $token ?>',{advertise_id:'<?php echo $advertise_id; ?>'});
+//--></script></div>
+<?php echo $footer; ?>

@@ -1,0 +1,276 @@
+<?php  
+class ControllerCommonPrivate extends Controller {  
+    private $error = array();
+   
+    public function index() {
+        $this->language->load('user/user');
+
+        $this->document->setTitle('Profile');
+    
+        $this->load->model('user/user');
+        
+        $data['heading_title'] = $this->language->get('profile_heading_title');
+        $data['text_form'] = $this->language->get('profile_text_form');
+        $data['text_enabled'] = $this->language->get('text_enabled');
+        $data['text_disabled'] = $this->language->get('text_disabled');
+
+        $data['entry_username'] = $this->language->get('entry_username');
+        $data['entry_user_group'] = $this->language->get('entry_user_group');
+        $data['entry_password'] = $this->language->get('entry_password');
+        $data['entry_confirm'] = $this->language->get('entry_confirm');
+        $data['entry_nickname'] = $this->language->get('entry_nickname');
+        $data['entry_firstname'] = $this->language->get('entry_firstname');
+        $data['entry_lastname'] = $this->language->get('entry_lastname');
+        $data['entry_email'] = $this->language->get('entry_email');
+        $data['entry_author_id'] = $this->language->get('entry_author_id');
+        $data['entry_image'] = $this->language->get('entry_image');
+        $data['entry_status'] = $this->language->get('entry_status');
+
+        $data['button_save'] = $this->language->get('button_save');
+        $data['button_cancel'] = $this->language->get('button_cancel');
+
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
+        } else {
+            $data['error_warning'] = '';
+        }
+
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+
+        if (isset($this->error['username'])) {
+            $data['error_username'] = $this->error['username'];
+        } else {
+            $data['error_username'] = '';
+        }
+
+        if (isset($this->error['password'])) {
+            $data['error_password'] = $this->error['password'];
+        } else {
+            $data['error_password'] = '';
+        }
+
+        if (isset($this->error['confirm'])) {
+            $data['error_confirm'] = $this->error['confirm'];
+        } else {
+            $data['error_confirm'] = '';
+        }
+
+        if (isset($this->error['nickname'])) {
+            $data['error_nickname'] = $this->error['nickname'];
+        } else {
+            $data['error_nickname'] = '';
+        }
+        
+        $url = '';
+            
+        if (isset($this->request->get['sort'])) {
+            $url .= '&sort=' . $this->request->get['sort'];
+        }
+
+        if (isset($this->request->get['order'])) {
+            $url .= '&order=' . $this->request->get['order'];
+        }
+        
+        if (isset($this->request->get['page'])) {
+            $url .= '&page=' . $this->request->get['page'];
+        }
+
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text'      => $this->language->get('text_home'),
+            'href'      => $this->url->link('common/home', 'token=' . $this->session->data['token'], 'SSL'),
+            'separator' => false
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text'      => 'Profile',
+            'href'      => $this->url->link('common/profile', 'token=' . $this->session->data['token'] . $url, 'SSL'),
+            'separator' => ' :: '
+        );
+        
+
+        $data['action'] = $this->url->link('common/private/update', 'token=' . $this->session->data['token'] . $url, 'SSL');
+
+          
+        $data['cancel'] = $this->url->link('common/home', 'token=' . $this->session->data['token'] . $url, 'SSL');
+
+        $user_info = $this->model_user_user->getUser($this->user->getId());
+
+        if (isset($this->request->post['username'])) {
+            $data['username'] = $this->request->post['username'];
+        } elseif (!empty($user_info)) {
+            $data['username'] = $user_info['username'];
+        } else {
+            $data['username'] = '';
+        }
+
+        if (isset($this->request->post['password'])) {
+            $data['password'] = $this->request->post['password'];
+        } else {
+            $data['password'] = '';
+        }
+
+        if (isset($this->request->post['confirm'])) {
+            $data['confirm'] = $this->request->post['confirm'];
+        } else {
+            $data['confirm'] = '';
+        }
+
+        if (isset($this->request->post['worker'])) {
+            $data['worker'] = $this->request->post['worker'];
+        } elseif (!empty($user_info['worker'])) {
+            $workers =  explode(",", $user_info['worker']);
+            $data['worker'] = is_array($workers) ? $workers : array(); 
+        } else {
+            $data['worker'] = array();
+        }
+
+        if (isset($this->request->post['nickname'])) {
+            $data['nickname'] = $this->request->post['nickname'];
+        } elseif (!empty($user_info['nickname'])) {
+            $data['nickname'] = $user_info['nickname'];
+        } else {
+            $data['nickname'] = '';
+        }
+
+        if (isset($this->request->post['firstname'])) {
+            $data['firstname'] = $this->request->post['firstname'];
+        } elseif (!empty($user_info['firstname'])) {
+            $data['firstname'] = $user_info['firstname'];
+        } else {
+            $data['firstname'] = '';
+        }
+
+        if (isset($this->request->post['lastname'])) {
+            $data['lastname'] = $this->request->post['lastname'];
+        } elseif (!empty($user_info['lastname'])) {
+            $data['lastname'] = $user_info['lastname'];
+        } else {
+            $data['lastname'] = '';
+        }
+
+        if (isset($this->request->post['email'])) {
+            $data['email'] = $this->request->post['email'];
+        } elseif (!empty($user_info['email'])) {
+            $data['email'] = $user_info['email'];
+        } else {
+            $data['email'] = '';
+        }
+        if (isset($this->request->post['author_id'])) {
+            $data['author_id'] = $this->request->post['author_id'];
+        } elseif (!empty($user_info['author_id'])) {
+            $data['author_id'] = $user_info['author_id'];
+        } else {
+            $data['author_id'] = '';
+        }
+        if (isset($this->request->post['image'])) {
+            $data['image'] = $this->request->post['image'];
+        } elseif (!empty($user_info['image'])) {
+            $data['image'] = $user_info['image'];
+        } else {
+            $data['image'] = '';
+        }
+
+        $this->load->model('tool/image');
+
+        if (isset($this->request->post['image']) && is_file(DIR_IMAGE . $this->request->post['image'])) {
+            $data['thumb'] = $this->model_tool_image->resize($this->request->post['image'], 100, 100);
+        } elseif (!empty($user_info) && $user_info['image'] && is_file(DIR_IMAGE . $user_info['image'])) {
+            $data['thumb'] = $this->model_tool_image->resize($user_info['image'], 100, 100);
+        } else {
+            $data['thumb'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+        }
+        
+        $data['placeholder'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+
+        if (isset($this->request->post['status'])) {
+            $data['status'] = $this->request->post['status'];
+        } elseif (!empty($user_info)) {
+            $data['status'] = $user_info['status'];
+        } else {
+            $data['status'] = 0;
+        }
+        $roles = array();
+        if($this->user->getId()==1){
+            $roles[] = $this->language->get('text_admin');
+        }else {
+            $_roles = $this->model_user_user->getUserRoles($this->user->getId());
+            foreach($_roles as $key){
+                $roles[] = $this->language->get('text_group_'.strtolower($key));
+            }
+        }
+        $data['roles'] =  implode("<br>",$roles);
+        $data['header'] = $this->load->controller('common/header');
+        $data['column_left'] = $this->load->controller('common/column_left');
+        $data['footer'] = $this->load->controller('common/footer');
+        $this->response->setOutput($this->load->view('common/private.tpl', $data));
+    }
+   
+    public function update() {
+        $this->language->load('user/user');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+        
+        $this->load->model('user/user');
+        
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
+            $this->model_user_user->editUser($this->user->getId(), $this->request->post);
+            
+            $this->session->data['success'] = $this->language->get('text_success');
+            
+            $url = '';
+                    
+            if (isset($this->request->get['sort'])) {
+                $url .= '&sort=' . $this->request->get['sort'];
+            }
+
+            if (isset($this->request->get['order'])) {
+                $url .= '&order=' . $this->request->get['order'];
+            }
+
+            if (isset($this->request->get['page'])) {
+                $url .= '&page=' . $this->request->get['page'];
+            }
+            
+            $this->response->redirect($this->url->link('common/private', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+        }
+    
+    }
+    
+    protected function validateForm() {
+    
+        if ((utf8_strlen($this->request->post['username']) < 3) || (utf8_strlen($this->request->post['username']) > 20)) {
+            $this->error['username'] = $this->language->get('error_username');
+        }
+        
+        $user_info = $this->model_user_user->getUserByUsername($this->request->post['username']);
+        
+        if ($user_info && ($this->user->getId() != $user_info['user_id'])) {
+            $this->error['warning'] = $this->language->get('error_exists');
+        }
+
+        if (!empty($this->request->post['password'])) {
+            if ((utf8_strlen($this->request->post['password']) < 4) || (utf8_strlen($this->request->post['password']) > 20)) {
+                $this->error['password'] = $this->language->get('error_password');
+            }
+    
+            if ($this->request->post['password'] != $this->request->post['confirm']) {
+                $this->error['confirm'] = $this->language->get('error_confirm');
+            }
+        }
+    
+        if (!$this->error) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+}

@@ -1,0 +1,491 @@
+<?php
+class ModelServiceQueue extends Model {
+
+    public function getAdvertisesQueue(){
+        $sql = "SELECT p.priority_id,pd.name ,COUNT(a.priority_id) quantity
+        FROM ".DB_PREFIX."priority p LEFT JOIN ".DB_PREFIX."advertise a ON ( p.priority_id = a.priority_id AND a.publish = '1') 
+        LEFT JOIN ".DB_PREFIX."priority_description pd ON ( pd.priority_id = p.priority_id AND pd.language_id = '".$this->config->get('config_language_id')."' ) 
+        GROUP BY p.priority_id ORDER BY p.priority_id ASC,a.date_added DESC ";
+        
+        $query = $this->db->query($sql);
+        $queue = array();
+        if($query->num_rows){
+            foreach ($query->rows as $row) {
+                $queue[] = $row;
+            }
+        }
+        return $queue;
+    }
+
+    public function getAdvertise($advertise_id,$simple=false) {
+        if($simple){
+            $sql = "SELECT a.*,pd.name product FROM ".DB_PREFIX."advertise a LEFT JOIN ".DB_PREFIX."product_description pd ON pd.product_id = a.product_id WHERE advertise_id = '".$advertise_id."' AND pd.language_id = '".$this->config->get('config_language_id')."'";
+        }else{
+            $sql = "SELECT a.*,w.domain website ,pd.name product,CONCAT(c.firstname, ' ', c.lastname) AS customer,c.company,CONCAT(u.lastname, ' ', u.firstname) AS charger, ap.name publish_text FROM `" . DB_PREFIX . "advertise` a 
+            LEFT JOIN ".DB_PREFIX."website w ON w.website_id = a.website_id LEFT JOIN ".DB_PREFIX."customer c ON c.customer_id = a.customer_id LEFT JOIN ".DB_PREFIX."user u ON u.user_id = a.in_charge 
+            LEFT JOIN ".DB_PREFIX."product_description pd ON pd.product_id = a.product_id LEFT JOIN `".DB_PREFIX."advertise_publish` ap ON ap.publish_id = a.publish WHERE a.advertise_id = '" . (int)$advertise_id . "' AND pd.language_id = '".$this->config->get('config_language_id')."'";
+        }
+        $query = $this->db->query($sql);
+
+        if ($query->num_rows) {
+            return $query->row;
+        } 
+        return false;
+    }
+
+    public function getAdvertises($data = array()) {
+
+        $sql = "SELECT a.*,w.domain website,w.status website_status, c.nickname customer, c.company ,u.nickname AS charger FROM `" . DB_PREFIX . "advertise` a 
+        LEFT JOIN `".DB_PREFIX."website` w ON w.website_id = a.website_id LEFT JOIN `".DB_PREFIX."customer` c ON c.customer_id = a.customer_id 
+        LEFT JOIN `".DB_PREFIX."user` u ON u.user_id = a.in_charge WHERE a.publish = '1'";
+        if(!in_array($this->user->getId(), $this->config->get('ad_group_manager'))){
+            $sql .= " AND ( (a.in_charge = '".$this->user->getId()."') OR (a.in_charge != '".$this->user->getId()."' AND w.status = '1' ) )";
+        }
+        if (!empty($data['filter_ad_id'])) {
+            $sql .= " AND a.advertise_id = '" . (int)$data['filter_ad_id'] . "'";
+        }
+        if (!empty($data['filter_product'])) {
+            $sql .= " AND a.product_id = '" . (int)$data['filter_product'] . "'";
+        }
+        if (!empty($data['filter_website'])) {
+            $sql .= " AND a.domain = '" . $this->db->escape($data['filter_website']) . "'";
+        }
+        if (!empty($data['priority_id'])) {
+            $sql .= " AND a.priority_id = '" . (int)$data['priority_id'] . "'";
+        }
+        if (!empty($data['filter_in_charge'])) {
+            $sql .= " AND a.in_charge = '" . (int)$data['filter_in_charge'] . "'";
+        }
+
+        if (!empty($data['filter_customer'])) {
+            $sql .= " AND CONCAT(c.firstname, ' ', c.lastname) LIKE '%" . $this->db->escape($data['filter_customer']) . "%'";
+        }
+        if (!empty($data['filter_date_added'])) {
+            $sql .= " AND DATE(a.date_added) = DATE('" . $this->db->escape($data['filter_date_added']) . "')";
+        }
+        if (!empty($data['filter_date_modified'])) {
+            $sql .= " AND DATE(a.date_modified) = DATE('" . $this->db->escape($data['filter_date_modified']) . "')";
+        }
+        if (!empty($data['filter_modified_start'])) {
+            $sql .= " AND DATE(a.date_modified) >= DATE('" . $this->db->escape($data['filter_modified_start']) . "')";
+        }
+        if (!empty($data['filter_modified_end'])) {
+            $sql .= " AND DATE(a.date_modified) <= DATE('" . $this->db->escape($data['filter_modified_end']) . "')";
+        }
+
+        if(isset($data['filter_message'])){
+            $query = $this->db->query("SELECT advertise_id FROM ".DB_PREFIX."advertise_tracking WHERE `read` = '0' AND `from` = 'member' AND publish = '1' ");
+            $ids = array();
+            if($query->num_rows){
+                foreach ($query->rows as $item) {
+                    if($item['advertise_id'])
+                        $ids[] = $item['advertise_id'];
+                }
+                if(count($ids)){
+                    $sql .= " AND a.advertise_id IN (".implode(",", $ids).")";
+                }else{
+                    return array();
+                }
+            }else{
+                return array();
+            }
+        }
+
+        $sort_data = array(
+            'a.advertise_id',
+            'a.product_id',
+            'a.website',
+            'a.in_charge',
+            'customer',
+            'a.date_added',
+            'a.date_modified',
+        );
+
+        if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+            $sql .= " ORDER BY " . $data['sort'];
+        } else {
+            $sql .= " ORDER BY a.date_modified";
+        }
+
+        if (isset($data['order']) && ($data['order'] == 'DESC')) {
+            $sql .= " DESC";
+        } else {
+            $sql .= " ASC";
+        }
+
+        if (isset($data['start']) || isset($data['limit'])) {
+            if ($data['start'] < 0) {
+                $data['start'] = 0;
+            }
+
+            if ($data['limit'] < 1) {
+                $data['limit'] = 20;
+            }
+
+            $sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+        }
+
+        $query = $this->db->query($sql);
+
+        return $query->rows;
+    }
+
+    public function getTotalAdvertises($data = array()) {
+
+        $sql = "SELECT COUNT(a.advertise_id) AS total FROM `" . DB_PREFIX . "advertise` a LEFT JOIN ".DB_PREFIX."customer c ON c.customer_id = a.customer_id LEFT JOIN `".DB_PREFIX."website` w ON w.website_id = a.website_id WHERE a.publish = '1' ";
+        if(!in_array($this->user->getId(), $this->config->get('ad_group_manager'))){
+            $sql .= " AND ( (a.in_charge = '".$this->user->getId()."') OR (a.in_charge != '".$this->user->getId()."' AND w.status = '1' ) )";
+        }
+        if (!empty($data['filter_ad_id'])) {
+            $sql .= " AND a.advertise_id = '" . (int)$data['filter_ad_id'] . "'";
+        }
+        if (!empty($data['priority_id'])) {
+            $sql .= " AND a.priority_id = '" . (int)$data['priority_id'] . "'";
+        }
+        if (!empty($data['filter_product'])) {
+            $sql .= " AND a.product_id = '" . (int)$data['filter_product'] . "'";
+        }
+        if (!empty($data['filter_website'])) {
+            $sql .= " AND a.domain = '" . $this->db->escape($data['filter_website']) . "'";
+        }
+
+        if (!empty($data['filter_in_charge'])) {
+            $sql .= " AND a.in_charge = '" . (int)$data['filter_in_charge'] . "'";
+        }
+
+        if (!empty($data['filter_customer'])) {
+            $sql .= " AND c.nickname LIKE '%" . $this->db->escape($data['filter_customer']) . "%'";
+        }
+        if (!empty($data['filter_date_added'])) {
+            $sql .= " AND DATE(a.date_added) = DATE('" . $this->db->escape($data['filter_date_added']) . "')";
+        }
+        if (!empty($data['filter_date_modified'])) {
+            $sql .= " AND DATE(a.date_modified) = DATE('" . $this->db->escape($data['filter_date_modified']) . "')";
+        }
+        if (!empty($data['filter_modified_start'])) {
+            $sql .= " AND DATE(a.date_modified) >= DATE('" . $this->db->escape($data['filter_modified_start']) . "')";
+        }
+
+        if (!empty($data['filter_modified_end'])) {
+            $sql .= " AND DATE(a.date_modified) <= DATE('" . $this->db->escape($data['filter_modified_end']) . "')";
+        }
+
+        if(isset($data['filter_message'])){
+            $query = $this->db->query("SELECT DISTINCT advertise_id FROM ".DB_PREFIX."advertise_tracking WHERE `read` = '0' AND `from` = 'member' AND `publish` = '1'");
+            $ids = array();
+            if($query->num_rows){
+                foreach ($query->rows as $item) {
+                    if($item['advertise_id'])
+                        $ids[] = $item['advertise_id'];
+                }
+                if(count($ids)){
+                    $sql .= " AND a.advertise_id IN (".implode(",", $ids).")";
+                }else{
+                    return 0;
+                }
+            }else{
+                return 0;
+            }
+        }
+
+        $query = $this->db->query($sql);
+
+        return $query->row['total'];
+    }
+
+    public function addAdvertiseHistory($advertise_id,$data){
+        $fields = array(
+            'publish'       => $data['publish'],
+            'note'          => strip_tags($data['note']),
+            'date_modified' => date('Y-m-d H:i:s')
+        );
+        $this->db->update('advertise',array('advertise_id'=>$advertise_id),$fields);
+        $history = array(
+            'advertise_id'  => $advertise_id,
+            'publish'       => $data['publish'],
+            'from'          => isset($data['from']) ? $data['from'] : 'backend',
+            'customer_id'   => 0,
+            'note'          => strip_tags($data['note']),
+            'in_charge'     => $this->user->getId(),
+            'notify'        => isset($data['notify']) ? $data['notify'] : 1,
+            'date_added'    => date('Y-m-d H:i:s')
+        );
+        return $this->db->insert('advertise_history',$history);
+    }
+
+
+    function readMessage($advertise_id){
+        $this->db->update('advertise_tracking',array('advertise_id'=>$advertise_id),array('read'=>1));
+    }
+
+    function getUnreadMessage($advertise_id=false){
+        $filter = array(
+            'one'   => true,
+            'field' => 'COUNT(tracking_id) total',
+            'condition' => array(
+                'from'  => 'member',
+                'read'  => 0
+            )
+        );
+        if($advertise_id){
+            $filter['condition']['advertise_id'] = $advertise_id;
+        }
+
+        $result = $this->db->fetch('advertise_tracking',$filter);
+        return isset($result['total']) ? $result['total'] : 0;
+    }
+
+    function addAdvertiseTracking($advertise_id,$data){
+        $fields = array(
+            'advertise_id'  => $advertise_id,
+            'text'          => $data['text'],
+            'attach'        => isset($data['attach']) ? htmlspecialchars_decode($data['attach']) : '',
+            'from'          => 'backend',
+            'user_id'       => $this->user->getId(),
+            'read'          => 0,
+            'date_added'    => date('Y-m-d H:i:s'),
+        );
+
+        return $this->db->insert('advertise_tracking',$fields);
+    }
+
+    function getAdvertiseTrackings($advertise_id){
+
+        $filter = array(
+            'alias'=> 'at',
+            'field'=> "at.*,CONCAT(c.firstname,' ',c.lastname) customer,c.company,CONCAT(u.lastname,' ',u.firstname) charger",
+            'join' => array(
+                array(
+                    'table' =>  'advertise',
+                    'alias' => 'a',
+                    'on'    => 'a.advertise_id = at.advertise_id'
+                ),
+                array(
+                    'table' =>  'customer',
+                    'alias' => 'c',
+                    'on'    => 'c.customer_id = a.customer_id'
+                ),
+                array(
+                    'table' => 'user',
+                    'alias' => 'u',
+                    'on'    => 'u.user_id = at.user_id'
+                ),
+            ),
+            'condition'=> array(
+                'advertise_id' => $advertise_id
+            ),
+            'sort'  => 'at.date_added DESC'
+        );
+
+        return $this->db->fetch('advertise_tracking',$filter);
+    }
+
+    function getLevelDown($advertise_id){
+        $fields = array(
+            'one'=>true,
+            'field'=> "ld.*,pd1.name from_name,pd2.name to_name",
+            'alias'=>'ld',
+            'join'=>array(
+                array(
+                    'table'=>'advertise',
+                    'alias'=>'a',
+                    'on'=>"a.advertise_id = ld.advertise_id "
+                ),
+                array(
+                    'table'=>'priority_description',
+                    'alias'=>'pd1',
+                    'on'=>"pd1.priority_id = a.priority_id AND pd1.language_id = '".$this->config->get('config_language_id')."'"
+                ),
+                array(
+                    'table'=>'priority_description',
+                    'alias'=>'pd2',
+                    'on'=>"pd2.priority_id = ld.to_priority AND pd2.language_id = '".$this->config->get('config_language_id')."'"
+                )
+            ),
+            'condition'=>array('advertise_id'=>$advertise_id,'publish'=>array('alias'=>'a','value'=>1))
+        );
+        return $this->db->fetch('advertise_demotion',$fields);
+    }
+
+
+    function levelDown($advertise_id,$approve=true,$note=''){
+        $ad = $this->getAdvertise($advertise_id);
+        if($ad){
+            $result = $this->db->fetch('advertise_demotion',array('one'=>true,'condition'=>array('advertise_id'=>$advertise_id)));
+            if($result){
+                if($approve){
+                    
+                    $priority = $this->db->fetch('priority',array('one'=>true,'condition'=>array('priority_id'=>$result['to_priority'])));
+
+                    $to_money = !empty($priority['money']) ? $priority['money'] : 0.00;
+
+                    $balance = $ad['money'] - $to_money;
+                    $fields = array(
+                        'priority_id'   => $result['to_priority'],
+                        'money'         => $to_money,
+                        'date_modified' => date('Y-m-d H:i:s')
+                    );
+                    $this->db->update('advertise',array('advertise_id'=>$advertise_id),$fields);
+                    $history = array(
+                        'customer_id' => $result['customer_id'],
+                        'user_id'       => $this->user->getId(),
+                        'type'          => 3,
+                        'advertise_id'  => $advertise_id,
+                        'from_priority' => $ad['priority_id'],
+                        'advertise_sn'  => $ad['advertise_sn'],
+                        'priority_id'   => $result['to_priority'],
+                        'amount'        => $balance,
+                        'note'          => $note,
+                        'date_added'    => date('Y-m-d H:i:s')
+                    );
+
+                    $this->db->insert('advertise_balance',$history);
+                    $this->db->delete('advertise_demotion',array('advertise_id'=>$advertise_id));
+                    if(!empty($note)){
+                        $this->addAdvertiseTracking($advertise_id,array('text'=>$note));
+                    }
+                    return 1;
+                }else{
+                    $this->db->delete('advertise_demotion',array('advertise_id'=>$advertise_id));
+                    if(!empty($note)){
+                        $this->addAdvertiseTracking($advertise_id,array('text'=>$note));
+                    }
+                    return 0;
+                }
+            }else{
+                return -2;
+            }
+        }else{
+            return -1;
+        }
+    }
+
+    public function getAdsLevelDown($data = array()) {
+        $sql = "SELECT ald.*,w.domain,w.status website_status,a.in_charge, c.nickname AS customer, c.company ,u.nickname AS charger,pd1.name from_name,pd2.name to_name
+        FROM `" . DB_PREFIX . "advertise_demotion` ald LEFT JOIN `".DB_PREFIX."advertise` a ON a.advertise_id = ald.advertise_id LEFT JOIN `".DB_PREFIX."customer` c ON c.customer_id = a.customer_id 
+        LEFT JOIN `".DB_PREFIX."priority_description` pd1 ON (pd1.priority_id = ald.from_priority AND pd1.language_id = '".$this->config->get('config_language_id')."') 
+        LEFT JOIN `".DB_PREFIX."priority_description` pd2 ON (pd2.priority_id = ald.to_priority AND pd2.language_id = '".$this->config->get('config_language_id')."') 
+        LEFT JOIN `".DB_PREFIX."website` w ON w.website_id = a.website_id LEFT JOIN `".DB_PREFIX."user` u ON u.user_id = a.in_charge WHERE a.`publish` = 1 ";
+        if(!in_array($this->user->getId(), $this->config->get('ad_group_manager'))){
+            $sql .= " AND (  (a.in_charge = '".$this->user->getId()."') OR (a.in_charge != '".$this->user->getId()."' AND w.status = '1' ) )";
+        }
+        if (!empty($data['filter_ad_id'])) {
+            $sql .= " AND ald.advertise_id = '" . (int)$data['filter_ad_id'] . "'";
+        }
+        if (!empty($data['filter_to'])) {
+            $sql .= " AND ald.to_priority = '" . (int)$data['filter_to'] . "'";
+        }
+        if (!empty($data['filter_from'])) {
+            $sql .= " AND ald.from_priority = '" . $this->db->escape($data['filter_from']) . "'";
+        }
+        if (!empty($data['filter_in_charge'])) {
+            $sql .= " AND a.in_charge = '" . (int)$data['filter_in_charge'] . "'";
+        }
+        if (!empty($data['filter_customer'])) {
+            $sql .= " AND c.nickname LIKE '%" . $this->db->escape($data['filter_customer']) . "%'";
+        }
+        if (!empty($data['filter_date_added_start'])) {
+            $sql .= " AND DATE(ald.date_added) >= DATE('" . $this->db->escape($data['filter_date_added_start']) . "')";
+        }
+        if (!empty($data['filter_date_added_end'])) {
+            $sql .= " AND DATE(ald.date_added) <= DATE('" . $this->db->escape($data['filter_date_added_end']) . "')";
+        }
+
+        $sort_data = array(
+            'ald.advertise_id',         
+            'ald.to_priority',
+            'ald.from_priority',
+            'customer',
+            'a.date_added',
+            'a.in_charge',
+        );
+
+        if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+            $sql .= " ORDER BY " . $data['sort'];
+        } else {
+            $sql .= " ORDER BY a.date_added";
+        }
+
+        if (isset($data['order']) && ($data['order'] == 'DESC')) {
+            $sql .= " DESC";
+        } else {
+            $sql .= " ASC";
+        }
+
+        if (isset($data['start']) || isset($data['limit'])) {
+            if ($data['start'] < 0) {
+                $data['start'] = 0;
+            }
+
+            if ($data['limit'] < 1) {
+                $data['limit'] = 20;
+            }
+
+            $sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+        }
+
+        $query = $this->db->query($sql);
+
+        return $query->rows;
+    }
+
+    public function getTotalAdsLevelDown($data = array()) {
+        $sql = "SELECT COUNT(ald.advertise_id) AS total FROM `" . DB_PREFIX . "advertise_demotion` ald 
+        LEFT JOIN ".DB_PREFIX."advertise a ON a.advertise_id = ald.advertise_id  LEFT JOIN ".DB_PREFIX."customer c ON c.customer_id = a.customer_id LEFT JOIN ".DB_PREFIX."website w ON w.website_id = a.website_id WHERE 1 ";
+        if(!in_array($this->user->getId(), $this->config->get('ad_group_manager'))){
+            $sql .= " AND (  (a.in_charge = '".$this->user->getId()."') OR (a.in_charge != '".$this->user->getId()."' AND w.status = '1' ) )";
+        }
+        if (!empty($data['filter_ad_id'])) {
+            $sql .= " AND ald.advertise_id = '" . (int)$data['filter_ad_id'] . "'";
+        }
+        if (!empty($data['filter_to'])) {
+            $sql .= " AND ald.to_priority = '" . (int)$data['filter_to'] . "'";
+        }
+        if (!empty($data['filter_from'])) {
+            $sql .= " AND ald.from_priority = '" . $this->db->escape($data['filter_from']) . "'";
+        }
+        if (!empty($data['filter_in_charge'])) {
+            $sql .= " AND a.in_charge = '" . (int)$data['filter_in_charge'] . "'";
+        }
+        if (!empty($data['filter_customer'])) {
+            $sql .= " AND c.nickname LIKE '%" . $this->db->escape($data['filter_customer']) . "%'";
+        }
+        if (!empty($data['filter_date_added_start'])) {
+            $sql .= " AND DATE(a.date_added) >= DATE('" . $this->db->escape($data['filter_date_added_start']) . "')";
+        }
+        if (!empty($data['filter_date_added_end'])) {
+            $sql .= " AND DATE(a.date_added) <= DATE('" . $this->db->escape($data['filter_date_added_end']) . "')";
+        }
+
+        $query = $this->db->query($sql);
+
+        return $query->row['total'];
+    }
+
+    public function getAdsQueueList($priority_id){
+        $query = $this->db->query("SELECT COUNT(advertise_id) total FROM ".DB_PREFIX."advertise WHERE publish = '1' AND priority_id = '".$priority_id."'");
+        return $query->row['total'];
+    }
+    public function getQueueNumber($advertise_id){
+        $sql = "SELECT a.`priority_id`,a.`money`,a.`publish`,pd.name priority FROM ".DB_PREFIX."advertise a LEFT JOIN ".DB_PREFIX."priority_description pd ON ( pd.priority_id = a.priority_id AND pd.language_id = '".$this->config->get('config_language_id')."' ) WHERE a.advertise_id = '".$advertise_id."'";
+        $query = $this->db->query($sql);
+        $number = 0;
+        if($query->num_rows){
+            if($query->row['publish']==1){
+                $number = 1;
+                $ad_query = $this->db->query("SELECT advertise_id FROM ".DB_PREFIX."advertise WHERE priority_id = '".$query->row['priority_id']."' AND publish = '1' ORDER BY date_modified ASC");
+                if($ad_query->num_rows){
+                    foreach ($ad_query->rows as $key => $item) {
+                        if($item['advertise_id'] == $advertise_id){
+                            $number = $key+1;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $number;
+    }
+
+
+}

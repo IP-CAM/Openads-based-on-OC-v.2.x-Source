@@ -1,0 +1,418 @@
+<?php echo $header; ?><?php echo $column_left; ?>
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="pull-right">
+                <a href="javascript:history.go(-1);" data-toggle="tooltip" title="<?php echo $button_cancel; ?>" class="btn btn-default"><i class="fa fa-reply"></i></a>
+            </div>
+            <h1><?php echo $heading_title; ?></h1>
+            <ul class="breadcrumb">
+                <?php foreach ($breadcrumbs as $breadcrumb) { ?>
+                <li><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a></li>
+                <?php } ?>
+            </ul>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <?php if ($error_warning) { ?>
+        <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $error_warning; ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        <?php } ?>
+        <?php if ($success) { ?>
+        <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo $success; ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        <?php } ?>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <ul class="nav nav-tabs">
+                    <li class="active"><a href="#tab-menu" data-toggle="tab"><?php echo $tab_menu; ?></a></li>
+                    <li><a href="#tab-member" data-toggle="tab"><?php echo $tab_member; ?></a></li>
+                    <li><a href="#tab-action" data-toggle="tab"><?php echo $tab_action; ?></a></li>
+                </ul>
+                <div class="tab-content">
+                    <div id="tab-menu" class="tab-pane active">
+                        <div class="tree-contain">
+                            <div class="tree well well-sm" id="menu-tree"></div>
+                            <div class="tool">
+                                <button type="button" class="btn btn-primary root-node" data-toggle="modal" data-target="#menu-dialog" data-mode="menu"><?php echo $text_create_root?></button>
+                                <br/><br/>
+                                <button type="button" data-rel="menu-tree" data-click=0 class="btn btn-info toggle"><?php echo $text_expand_collapse ?></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-member" class="tab-pane">
+                        <div class="tree-contain">
+                            <div class="tree well well-sm" id="member-tree"></div>
+                            <div class="tool">
+                                <button type="button" class="btn btn-primary root-node" data-toggle="modal" data-target="#menu-dialog" data-mode="member"><?php echo $text_create_root?></button>
+                                <br/><br/>
+                                <button type="button" data-rel="member-tree" data-click=0 class="btn btn-info toggle"><?php echo $text_expand_collapse;?></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-action" class="tab-pane">
+                        <div class="tree-contain">
+                            <div class="tree well well-sm" id="action-tree"></div>
+                            <div class="tool">
+                                <button type="button" class="btn btn-primary" id="sync"><?php echo $text_sync?></button>
+                                <br/><br/>
+                                <button type="button" data-rel="action-tree" data-click=0 class="btn btn-info toggle"><?php echo $text_expand_collapse;?></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="menu-dialog" tabindex="-1" role="dialog" aria-labelledby="menuLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="menuLabel"><?php echo $text_new_node?></h4>
+            </div>
+            <div class="modal-body">
+                <table class="form">
+                    <tr><td><label for="parent-name" class="control-label"><?php echo $entry_parent?></label></td>
+                        <td>
+                            <input type="hidden" name="node_id">
+                            <input type="hidden" name="parent_id">
+                            <input type="hidden" name="level">
+                            <input type="hidden" name="mode" value="menu" />
+                            <span id="parent-name">/</span>
+                        </td>
+                    </tr>
+                    <tr><td><label for="key" class="control-label"><?php echo $entry_key ?></label></td>
+                        <td><input type="text" class="form-control" id="key" name="key"></td>
+                    </tr>
+                    <tr><td><label for="title" class="control-label"><?php echo $entry_title ?></label></td>
+                        <td>
+                            <?php if(0){?>
+                            <input type="text" class="form-control" id="title" name="title">
+                            <?php }?>
+                            <?php foreach ($languages as $language) { ?>
+                                <div class="input-group">
+                                    <span class="input-group-addon">
+                                        <img src="<?php echo TPL_IMG ?>flags/<?php echo $language['image']; ?>" title="<?php echo $language['title']; ?>" />
+                                    </span>
+                                    <input type="text" name="title[<?php echo $language['code']; ?>]" placeholder="<?php echo $language['code']; ?>" class="form-control" />
+                                </div>
+                            <?php } ?>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr><td><label for="path" class="control-label"><?php echo $entry_path ?></label></td>
+                        <td><input type="text" class="form-control" id="path" name="path"></td>
+                    </tr>
+                    <tr><td><label for="status" class="control-label"><?php echo $entry_status ?></label></td>
+                        <td>
+                            <select name="status" class="form-control">
+                                <option value="1"><?php echo $text_yes;?></option>
+                                <option value="0"><?php echo $text_no;?></option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr><td><label for="auth" class="control-label"><?php echo $entry_auth ?></label></td>
+                        <td>
+                            <select name="auth" class="form-control">
+                                <option value="1"><?php echo $text_yes;?></option>
+                                <option value="0"><?php echo $text_no;?></option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr><td><label for="style-class" class="control-label"><?php echo $entry_style?></label></td>
+                        <td><input type="text" class="form-control" id="style-class" name="note"></td>
+                    </tr>
+                    <tr><td><label for="sort" class="control-label"><?php echo $entry_sort ?></label></td>
+                        <td><input type="text" class="form-control" id="sort" name="sort"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $button_close ?></button>
+                <button type="button" class="btn btn-primary" data-action="save" data-rel="menu-tree"><?php echo $button_save ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(function () { 
+        $('#menu-tree').jstree({
+            'core' : {
+                'data' : {
+                    'url' : 'index.php?route=setting/permission_node&permission=1&token=<?php echo $token ?>&mode=menu',
+                    'dataType' : 'json'
+                },
+                'check_callback' : true,
+                'themes' : { 'responsive' : false }
+            },
+            'plugins' : ['state','dnd' , 'contextmenu' , 'wholerow'],
+            'contextmenu' : {'items' : customContextMenu }
+        })
+        .on('delete_node.jstree', function (e, data) { jstree_delete_node(data); })
+        .on('move_node.jstree', function (e, data) { jstree_move_node(data);});
+
+        $('#member-tree').jstree({
+            'core' : {
+                'data' : {
+                    'url' : 'index.php?route=setting/permission_node&permission=1&token=<?php echo $token ?>&mode=member',
+                    'dataType' : 'json'
+                },
+                'check_callback' : true,
+                'themes' : { 'responsive' : false }
+            },
+            'plugins' : ['state','dnd' , 'contextmenu' , 'wholerow'],
+            'contextmenu' : {'items' : customContextMenu }
+        })
+        .on('delete_node.jstree', function (e, data) { jstree_delete_node(data); })
+        .on('move_node.jstree', function (e, data) { jstree_move_node(data);});
+
+        $('#action-tree').jstree({
+            'core' : {
+                'data' : {
+                    'url' : 'index.php?route=setting/permission_node&permission=1&token=<?php echo $token ?>&mode=file',
+                    'dataType' : 'json'
+                },
+                'check_callback' : true,
+                'themes' : { 'responsive' : false }
+            },
+            'plugins' : ['contextmenu' , 'wholerow'],
+            'contextmenu' : { 'items' : customActionMenu }
+        })
+    });
+    function customContextMenu(node){
+        var items = {
+            'create' : {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "<?php echo $button_create ?>",
+                "action"  : function(node){
+                    var inst = $.jstree.reference(node.reference),
+                    obj = inst.get_node(node.reference);
+                    render_dialog(obj.original.mode,obj.original,'create');
+                }
+            },
+            'rename' : {
+                "separator_before": true,
+                "separator_after": true,
+                "label": "<?php echo $button_edit ?>",
+                "action": function (node) {
+                    var inst = $.jstree.reference(node.reference),
+                    obj = inst.get_node(node.reference);
+                    render_dialog(obj.original.mode,obj.original,'edit');
+                }
+            },
+            'remove' : {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "<?php echo $button_remove ?>",
+                "action": function (node) {
+                    var inst = $.jstree.reference(node.reference),
+                    obj = inst.get_node(node.reference);
+                    if(inst.is_selected(obj)) {
+                        inst.delete_node(inst.get_selected());
+                    }else {
+                        inst.delete_node(obj);
+                    }
+                }
+            }
+        }
+        return items;
+    }
+
+    function customActionMenu(node){
+        var items = {
+            "create" : {
+                "label" : '<?php echo $button_sync ?>',
+                "_disabled" : node.children.length ? false : true,
+                "action" : function (data) {
+                    if(confirm('<?php echo $text_confirm_sync ?> ['+node.text+' : '+node.original.path+']')){
+                        $.ajax({
+                            url:'index.php?route=setting/permission_node/sync&token=<?php echo $token; ?>',
+                            type:'post',
+                            data:{node_id:node.id},
+                            dataType:'json',
+                            success:function(json){
+                                alert(json.msg);
+                                if(json.status==1){
+                                    $.jstree.reference(data.reference).load_node(node.id);
+                                }else{
+                                    return false;
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        return items;
+    }
+
+    function jstree_delete_node(data){
+        if(confirm('<?php echo $text_confirm_del ?>['+data.node.text +'] ?')){
+            $.post('index.php?route=setting/permission_node/delete&token=<?php echo $token; ?>', { 'node_id' : data.node.id }).fail(function () { data.instance.refresh(); });
+            return true;
+        }
+        return false;
+    }
+
+    function jstree_move_node(data){
+        var type = '<?php echo $text_inside ?>';
+        if(data.parent==data.old_parent){
+            if(data.position > data.old_position){
+                type = '<?php echo $text_after ?>';
+            }
+            if(data.position < data.old_position){
+                type = '<?php echo $text_before ?>';
+            }
+        }
+        var parent_text = '<?php echo $text_root ?>';
+        if($.isNumeric(data.parent)){
+            var _p = data.instance.get_node(data.parent);
+            parent_text = _p.text;
+        }
+        if(confirm('<?php echo $text_confirm_move ?> ['+data.node.text +'] '+type+' ['+parent_text+'] ?')){
+            $.post('index.php?route=setting/permission_node/save&token=<?php echo $token; ?>', { 'node_id' : data.node.id, 'parent' : data.parent, 'position':data.position,'drag':1})
+            .done(function (d) {
+                var json = JSON.parse(d);
+                alert(json.msg);
+                if(json.status){ data.instance.refresh(); }
+            })
+            .fail(function () { data.instance.refresh(); });
+        }else{
+            data.instance.refresh();
+        }
+        return false;
+    }
+    function render_dialog(mode,node,action){
+        $('#menu-dialog input').val('');
+        $('#menu-dialog #do-result').empty();
+        $('#menu-dialog i.s-c').remove();
+        var title = '';
+        var that = this;
+        if(node && action=='edit'){
+            title = '<?php echo $text_edit ?> ['+node.text+']';
+            $('#parent-name').html(node.p_path=='' ? '/' : node.p_path);
+            $('#menu-dialog input[name="node_id"]').val(node.id);
+            $('#menu-dialog input[name="parent_id"]').val(node.p_id);
+            $('#menu-dialog input[name="key"]').val(node.key);
+            $('#menu-dialog input[name="path"]').val(node.path);
+            $('#menu-dialog select[name="auth"]').val(node.auth);
+            $('#menu-dialog select[name="status"]').val(node.status);
+            $('#menu-dialog input[name="sort"]').val(node.sort);
+            $('#menu-dialog input[name="level"]').val(node.level);
+            $('#menu-dialog input[name="note"]').val(node.note).after('<i class="s-c '+node.note+'"></i>'); 
+            if(node.lang){
+                for(var k in node.lang){
+                    $('#menu-dialog input[name="title['+k+']"]').val(node.lang[k]);
+                }
+            }
+        }else{
+            title = '<?php echo $text_new_node?>';
+            $('#parent-name').html(node ? node.p_path+'/' :'/');
+            $('#menu-dialog input[name="parent_id"]').val(node ? node.id : 0); 
+            $('#menu-dialog input[name="level"]').val(node ? parseInt(node.level)+1 : 1); 
+            $('#menu-dialog input[name^="title"]').val('');
+        }
+        $('#menu-dialog input[name="mode"]').val(mode);
+        $('#menu-dialog .modal-title').text(title);
+        $('button[data-action="save"]').attr('data-rel',mode=='member' ? 'member-tree' : 'menu-tree');
+        if(node){  $('#menu-dialog').modal('show');}
+        return true;
+    }
+    $('.root-node').on('click',function(){render_dialog($(this).attr('data-mode'),false,'create');});
+    $('button[data-action="save"]').on('click',function(){
+        var that = $(this).attr('data-rel');
+        $.ajax({
+            url:'index.php?route=setting/permission_node/save&token=<?php echo $token; ?>',
+            type:'post',
+            data:$('#menu-dialog input,#menu-dialog select'),
+            dataType:'json',
+            success:function(json){
+                if(json.status==1){
+                    alert(json.msg);
+                    $.jstree.reference(that).refresh();
+                    $('#menu-dialog').modal('hide');
+                }else{
+                    alert(json.msg);
+                    return false;
+                }
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+                return false;
+            }
+        });
+    });
+
+    $('#sync').on('click',function(){
+        if(confirm('<?php echo $text_confirm_sync_all ?>')){
+            $.ajax({
+                url:'index.php?route=setting/permission_node/sync&token=<?php echo $token;?>',
+                type:'post',
+                dataType:'json',
+                beforeSend: function() {
+                    $('.success, .warning').remove();
+                    $(this).attr('disabled', true);
+                    $('#tab-action table').before('<div class="attention"><img src="view/image/loading.gif"/><?php echo $text_wait;?></div>');
+                },
+                success:function(json){
+                    if(json.status==1){
+                        $(this).removeAttr('disabled');
+                        $('.attention').removeClass('attention').addClass('success').html(json.msg);
+                        return true;
+                    }else{
+                        $('.attention').html(json.msg);
+                        return false;
+                    }
+                },
+                error: function(xhr, ajaxOptions, thrownError) {
+                    alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+                    return false;
+                }
+            });
+        }
+    });
+
+    $('.toggle').click(function(){
+        if($(this).attr('data-click')==0){
+            $.jstree.reference($(this).attr('data-rel')).open_all();
+            $(this).attr('data-click',1)
+        }else{
+            $.jstree.reference($(this).attr('data-rel')).close_all();
+            $(this).attr('data-click',0)
+        }
+    });
+</script>
+<style type="text/css">   
+.tree-contain{position: relative;}
+.tree-contain .tree{
+    margin:0 auto;
+    width:62%;
+    padding: 20px;
+    border:1px dashed #dedede;
+    height:520px;
+    overflow: auto;
+}
+.tree-contain .tool{position: absolute;right: 15px;top:15px;}
+table.form {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+table.form > tbody > tr > td:first-child {
+    width: 200px;text-align: right;
+}
+table.form > tbody > tr > td {
+    padding: 10px;
+    color: #000000;
+    border-bottom: 1px dotted #CCCCCC;
+}
+</style>
+<?php echo $footer; ?> 

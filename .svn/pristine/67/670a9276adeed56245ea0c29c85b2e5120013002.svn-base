@@ -1,0 +1,263 @@
+<?php
+class ModelUserUser extends Model {
+	public function addUser($data) {
+		$salt = substr(md5(uniqid(rand(), true)), 0, 9);
+		
+	    $office_fields = array(
+			'office_name' 		=> $data['username'],
+			'salt'			=> $salt,
+			'office_group_id'=> (int)$data['user_group_id'],
+			'password'		=> sha1($salt . sha1($salt . sha1($data['password']))),
+			'nickname'		=> $data['nickname'],
+			'firstname'		=> $data['firstname'],
+			'lastname'		=> $data['lastname'],
+			'email'			=> $data['email'],
+			'author_id'		=> $data['author_id'],
+			'worker'		=> (isset($data['worker']) && is_array($data['worker']) ? implode(",", $data['worker']) : ''),
+			'image'			=> $data['image'],
+			'status'		=> (int)$data['status'],
+			'date_added'	=> date('Y-m-d H:i:s')
+		);
+
+		$last_office_id=$this->db->insert("office_user",$office_fields);
+	    $fields = array(
+			'username' 		=> $data['username'],
+			'user_group_id' => (int)$data['user_group_id'],
+			'salt'			=> $salt,
+			'password'		=> sha1($salt . sha1($salt . sha1($data['password']))),
+			'nickname'		=> $data['nickname'],
+	        'roles'		=> (isset($data['roles']) && is_array($data['roles']) ? implode(",", $data['roles']) : ''),
+	        'office_id'		=> $last_office_id,
+			'firstname'		=> $data['firstname'],
+			'lastname'		=> $data['lastname'],
+			'email'			=> $data['email'],
+			'author_id'		=> $data['author_id'],
+			'image'			=> $data['image'],
+			'status'		=> (int)$data['status'],
+			'date_added'	=> date('Y-m-d H:i:s')
+		);
+		$this->db->insert("user",$fields);
+	}
+
+	public function editUser($user_id, $data) {
+		$office_id=$this->getUserOfficeId($user_id);
+		$fields = array(
+			'username' 		=> $data['username'],
+			'nickname'		=> $data['nickname'],
+			'firstname'		=> $data['firstname'],
+			'lastname'		=> $data['lastname'],
+			'email'			=> $data['email'],
+		    'roles'		=> (isset($data['roles']) && is_array($data['roles']) ? implode(",", $data['roles']) : ''),
+			'worker'		=> (isset($data['worker']) && is_array($data['worker']) ? implode(",", $data['worker']) : ''),
+			'image'			=> $data['image'],
+		);
+		if(isset($data['user_group_id'])){
+			$fields['user_group_id'] = (int)$data['user_group_id'];
+		}
+		if(isset($data['status'])){
+			$fields['status'] = (int)$data['status'];
+		}
+		if(isset($data['author_id'])){
+			$fields['author_id'] = $data['author_id'];
+		}
+		$office_fields = array(
+			'office_name' 	=> $data['username'],
+			'nickname'		=> $data['nickname'],
+			'firstname'		=> $data['firstname'],
+			'lastname'		=> $data['lastname'],
+			'email'			=> $data['email'],
+			'image'			=> $data['image'],
+		);
+		if(isset($data['user_group_id'])){
+			$office_fields['office_group_id'] = (int)$data['user_group_id'];
+		}
+		if(isset($data['author_id'])){
+			$office_fields['author_id'] = $data['author_id'];
+		}
+		if(isset($data['status'])){
+			$office_fields['status'] = (int)$data['status'];
+		}
+		$this->db->update("user",array('user_id' =>(int)$user_id),$fields);
+		$this->db->update("office_user",array('office_id' =>(int)$office_id),$office_fields);
+
+		if ($data['password']) {
+			$salt = substr(md5(uniqid(rand(), true)), 0, 9);
+			$fields = array(
+				'salt'		=> $salt,
+				'password'	=> sha1($salt . sha1($salt . sha1($data['password']))),
+			);
+			$this->db->update("user",array('user_id' =>(int)$user_id),$fields );
+			$this->db->update("office_user",array('office_id' =>(int)$office_id),$fields);
+		}
+	}
+
+	public function editPassword($user_id, $password) {
+		$salt = substr(md5(uniqid(rand(), true)), 0, 9);
+		$fields = array(
+			'salt'		=> $salt,
+			'password'	=> sha1($salt . sha1($salt . sha1($data['password']))),
+			'code'		=> ''
+		);
+		$this->db->update("user" ,array('user_id' => (int)$user_id),$fields);
+	}
+
+	public function editCode($email, $code) {
+		$this->db->query("UPDATE `" . DB_PREFIX . "user` SET code = '" . $this->db->escape($code) . "' WHERE LCASE(email) = '" . $this->db->escape(utf8_strtolower($email)) . "'");
+	}
+
+	public function deleteUser($user_id) {
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "user` WHERE user_id = '" . (int)$user_id . "'");
+	}
+
+	public function getUser($user_id) {
+		$query = $this->db->query("SELECT u.*, (SELECT ug.name FROM `" . DB_PREFIX . "user_group` ug WHERE ug.user_group_id = u.user_group_id) AS user_group FROM `" . DB_PREFIX . "user` u WHERE u.user_id = '" . (int)$user_id . "'");
+
+		return $query->row;
+	}
+
+	public function getUserByUsername($username) {
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user` WHERE username = '" . $this->db->escape($username) . "'");
+
+		return $query->row;
+	}
+
+	public function getUserByCode($code) {
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user` WHERE code = '" . $this->db->escape($code) . "' AND code != ''");
+
+		return $query->row;
+	}
+
+	public function getUserByAuthorId($author_id) {
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user` WHERE author_id = '" . $this->db->escape($author_id) . "' ");
+
+		return $query->row;
+	}
+
+	public function getAuthors(){
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user` WHERE LENGTH(author_id) = '3' AND status = '1'");
+
+		return $query->rows;
+	}
+
+	public function getUsers($data = array()) {
+		$sql = "SELECT u.*,nickname name, ug.name as `group` FROM `" . DB_PREFIX . "user` u LEFT JOIN `".DB_PREFIX."user_group` ug ON ug.user_group_id = u.user_group_id ";
+
+		$sort_data = array(
+			'username',
+			'group',
+			'status',
+			'date_added',
+			'user_id'
+		);
+
+		if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+			$sql .= " ORDER BY " . $data['sort'];
+		} else {
+			$sql .= " ORDER BY user_id";
+		}
+
+		if (isset($data['order']) && ($data['order'] == 'DESC')) {
+			$sql .= " DESC";
+		} else {
+			$sql .= " ASC";
+		}
+
+		if (isset($data['start']) || isset($data['limit'])) {
+			if ($data['start'] < 0) {
+				$data['start'] = 0;
+			}
+
+			if ($data['limit'] < 1) {
+				$data['limit'] = 20;
+			}
+
+			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+		}
+
+		$query = $this->db->query($sql);
+
+		return $query->rows;
+	}
+
+	public function getTotalUsers() {
+		$query = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "user`");
+
+		return $query->row['total'];
+	}
+
+	public function getTotalUsersByGroupId($user_group_id) {
+		$query = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "user` WHERE user_group_id = '" . (int)$user_group_id . "'");
+
+		return $query->row['total'];
+	}
+
+	public function getTotalUsersByEmail($email) {
+		$query = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "user` WHERE LCASE(email) = '" . $this->db->escape(utf8_strtolower($email)) . "'");
+
+		return $query->row['total'];
+	}
+
+	public function getAdOperators($key){
+		$users = $this->config->get('ad_group_'.strtolower($key));
+		$data = array();
+		if(is_array($users)){
+			foreach($users as $uid){
+				$row = $this->getUser($uid);
+				if($row) {
+					$data[] = array(
+						'user_id' 	=> $row['user_id'],
+						'name' 	=> $row['nickname'],
+						'username' 	=> $row['username'],
+						'author_id' => $row['author_id']
+					);
+				}
+			}
+		}
+		return $data;
+	}
+
+	public function getUsersByGroupKey($key) {
+		$data = array();
+		$query = $this->db->query("SELECT u.* FROM " . DB_PREFIX . "user u LEFT JOIN ".DB_PREFIX."user_group ug ON u.user_group_id = ug.user_group_id WHERE ug.`key` = '" . $this->db->escape($key) . "'");
+		if($query->num_rows){
+			foreach ($query->rows as $row) {
+				$data[] = array(
+					'user_id'   => $row['user_id'],
+					'name'      => $row['nickname'],
+					'username' 	=> $row['username'],
+					'user_group_id'=> $row['user_group_id'],
+					'author_id' => $row['author_id']
+				);
+			}
+		}	
+		
+		return $data;
+	}
+
+	public function getUserAuthorId($user_id){
+		$query = $this->db->query("SELECT author_id FROM ".DB_PREFIX."user WHERE user_id = '".$user_id."'");
+		return $query->num_rows ? $query->row['author_id'] : false;
+	}
+	public function getUserOfficeId($user_id){
+		$query = $this->db->query("SELECT office_id FROM ".DB_PREFIX."user WHERE user_id = '".$user_id."'");
+		return $query->num_rows ? $query->row['office_id'] : false;
+	}
+
+	public function getSuperiors($user_id){
+		$data =  array();
+		$query = $this->db->query("SELECT user_id FROM ".DB_PREFIX."user WHERE FIND_IN_SET(".$user_id.",worker)");
+		if($query->num_rows){
+			foreach ($query->rows as $row) {
+				if($row['user_id']){
+					$data[] = $row['user_id'];
+				}
+			}
+		}
+
+		return $data;
+	}
+	public function getAllRoles(){
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user_role` WHERE 1 ");
+        return $query->rows;
+	}
+}

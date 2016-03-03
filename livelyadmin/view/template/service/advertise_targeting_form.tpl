@@ -1,0 +1,297 @@
+<div class="do-result">
+    <?php if ($locked) { ?>
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $text_lock; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <?php if ($error_warning) { ?>
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $error_warning; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <?php if ($success) { ?>
+    <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo $success; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+</div>
+<ul class="nav nav-tabs">
+    <li class="active"><a href="#tab-post" data-toggle="tab"><?php echo $tab_targeting; ?></a></li>
+    <li><a href="#tab-history" data-toggle="tab"><?php echo $tab_history; ?></a></li>
+</ul>
+<div class="tab-content">
+    <div class="tab-pane active" id="tab-post">
+        <form method="post" class="form-horizontal" id="ad-targeting-update" action="<?php echo $action ?>">
+            <input type="hidden" name="targeting_id" value="<?php echo $targeting_id?>">
+
+            <fieldset id="targeting-set">
+                <legend>
+                    <?php echo $text_targeting ?>
+                    <div class="pull-right">
+                        <?php echo $status_text ?>
+                    </div>
+                </legend>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_target_url ?></label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" name="target_url" <?php echo $modify ? '' : 'readonly' ?> value="<?php echo $target_url ?>" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_location ?></label>
+                    <div class="col-sm-10">
+                        <?php foreach ($locations as $item): ?>
+                        <div class="checkbox-inline">
+                            <label>
+                                <input type="checkbox" name="location[]" value="<?php echo $item['targeting_id'] ?>" <?php echo in_array($item['targeting_id'], $location) ? 'checked' : '' ?> <?php echo $modify ? '' : 'readonly' ?>/>
+                                <?php echo $item['name'] ?>
+                            </label>
+                        </div>
+                        <?php endforeach ?>
+                        <a class="other-set">
+                            <i class="fa <?php echo empty($other_location) ? 'fa-angle-down' : 'fa-angle-up' ?>"></i> <?php echo $entry_other_location ?>
+                        </a>
+
+                        <textarea class="form-control" name="other_location" placeholder="<?php echo $entry_other_location;?>" <?php echo $modify ? '' : 'readonly' ?> <?php echo empty($other_location) ? 'style="display:none"' : '' ?> ><?php echo $other_location ?></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_age ?></label>
+                    <div class="col-sm-10">
+                        <div class="input-group">
+                            <select class="form-control" style="width:80px;margin-right:20px;" name="age_min"  title="<?php echo $entry_age_min ?>" <?php echo $modify ? '' : 'readonly' ?>>
+                                <?php for ($i=13; $i <66; $i++) { ?>
+                                <option value="<?php echo $i ?>" <?php echo $i==$age_min ? 'selected="selected"' : '' ?>>
+                                    <?php echo (int)$i ?>
+                                </option>
+                                <?php }?>
+                            </select>
+                            <select class="form-control" style="width:80px" name="age_max" data-toggle="tooltip" title="<?php echo $entry_age_max ?>" <?php echo $modify ? '' : 'readonly' ?>>
+                                <?php for ($i=13; $i <65; $i++) { ?>
+                                <option value="<?php echo $i ?>" <?php echo $i==$age_max ? 'selected="selected"' : '' ?>>
+                                    <?php echo (int)$i ?>
+                                </option>
+                                <?php }?>
+                                <option value="100" <?php echo !$age_max || $age_max==100 ? 'selected="selected"' : ''; ?>><?php echo '65+' ?></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_gender ?></label>
+                    <div class="col-sm-10">
+                        <?php foreach ($genders as $item): ?>
+                        <div class="radio-inline" >
+                            <label>
+                                <input type="radio" name="gender" value="<?php echo $item['targeting_id'] ?>" <?php echo $gender==$item['targeting_id'] ? 'checked' : '' ?> <?php echo $modify ? '' : 'readonly' ?>/>
+                                <?php echo $item['name'] ?>
+                            </label>
+                        </div>
+                        <?php endforeach ?>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_language ?></label>
+                    <div class="col-sm-10">
+                        <?php foreach ($languages as $item): ?>
+                        <div class="checkbox-inline">
+                            <label>
+                                <input type="checkbox" name="language[]" value="<?php echo $item['targeting_id'] ?>" <?php echo in_array($item['targeting_id'], $language) ? 'checked' : '' ?> <?php echo $modify ? '' : 'readonly' ?>/>
+                                <?php echo $item['name'] ?>
+                            </label>
+                        </div>
+                        <?php endforeach ?>
+                        <a class="other-set">
+                            <i class="fa <?php echo empty($other_language) ? 'fa-angle-down' : 'fa-angle-up'?>"></i> <?php echo $entry_other_language ?>
+                        </a>
+                        <textarea name="other_language" class="form-control" placeholder="<?php echo $entry_other_language;?>" <?php echo $modify ? '' : 'readonly' ?> <?php echo empty($other_language) ? 'style="display:none"' : '' ?> ><?php echo $other_language ?></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_interest ?></label>
+                    <div class="col-sm-10">
+                        <textarea name="interest" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $interest ?></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_audience ?></label>
+                    <div class="col-sm-10">
+                        <input type="text" name="audience" class="form-control" value="<?php echo $audience ?>" <?php echo $modify ? '' : 'readonly' ?> />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_behavior ?></label>
+                    <div class="col-sm-10">
+                        <textarea name="behavior" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $behavior ?></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_more ?></label>
+                    <div class="col-sm-10">
+                        <textarea name="more" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $more ?></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_note ?></label>
+                    <div class="col-sm-10">
+                        <textarea name="note" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $note ?></textarea>
+                    </div>
+                </div>
+            </fieldset>
+            <?php if($relax){ ?>
+            <fieldset>
+                <legend></legend>
+                <div class="form-group">
+                    <div class="col-sm-10 col-sm-offset-2">
+                        <button type="button" id="btn-relax" data-toggle="tooltip" title="<?php echo $button_relax; ?>" class="btn btn-warning">
+                            <i class="fa fa-unlock"></i> <?php echo $button_relax; ?>
+                        </button>
+                    </div>
+                </div>
+            </fieldset>
+            <?php } ?>
+            <?php if($modify){ ?>
+            <fieldset>
+                <legend></legend>
+                <div class="form-group">
+                    <div class="col-sm-10 col-sm-offset-2">
+                        <button form="ad-targeting-update" data-toggle="tooltip" title="<?php echo $button_save; ?>" class="btn btn-primary">
+                            <i class="fa fa-save"></i> <?php echo $button_save; ?>
+                        </button>
+                    </div>
+                </div>
+            </fieldset>
+            <?php }?>
+            <fieldset id="advertise-set">
+                <legend>
+                    <?php echo $text_advertise ?>
+                    <div class="pull-right">
+                        <a class="btn btn-default btn-xs widget-tg" data-rel="advertise"><i class="fa fa-minus"></i> </a>
+                    </div>
+                </legend>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_product ?></label>
+                    <div class="col-sm-10"><?php echo $product ?></div>
+                </div>
+                <?php if(!empty($domain)){ ?>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_domain ?></label>
+                    <div class="col-sm-10"><?php echo $domain ?></div>
+                </div>
+                <?php }?>
+                <?php if(!empty($ad_note)){ ?>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_ad_note ?></label>
+                    <div class="col-sm-10"><?php echo $ad_note ?></div>
+                </div>
+                <?php }?>
+            </fieldset>
+        </form>
+    </div>
+    <div class="tab-pane" id="tab-history">
+        <div id="history"></div>
+    </div>
+</div>
+
+<script type="text/javascript"><!--
+    <?php if($modify){ ?>
+    $(function() {
+        $('#ad-targeting-update')
+        .formValidation({
+            framework:'bootstrap',
+            icon: false,
+            fields: {
+                'target_url':{
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_target_url ?>'
+                        },
+                        uri:{
+                            message: '<?php echo $error_invalid_url ?>'
+                        }
+                    }
+                },
+                'location[]': {
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_location ?>'
+                        }
+                    }
+                },
+                'language[]': {
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_language ?>'
+                        }
+                    }
+                },
+
+                'gender': {
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_gender ?>'
+                        }
+                    }
+                }
+            }
+        })
+        .on('success.form.fv', function(e) {
+            e.preventDefault();
+            var $form = $(e.target);
+            $.post(
+                $form.attr('action'),
+                $form.serialize(),
+                function(json){
+                    $('html, body').animate({ scrollTop: 0 }, 'fast');
+                    if(json.status==0){
+                        $('.do-result').html('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json.msg + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                    }else {
+                        location.reload();
+                    }
+                },
+                'json'
+            );
+        });
+
+    });
+    <?php }?>
+    //toggle
+    $('.widget-tg').bind('click', function () {
+        $('#'+$(this).attr('data-rel')+'-set').find('div.form-group').slideToggle();
+        if($(this).children('i').hasClass('fa-minus')){
+            $(this).children('i').removeClass('fa-minus').addClass('fa-plus');
+        }else{
+            $(this).children('i').removeClass('fa-plus').addClass('fa-minus');
+        }
+    });
+    $('.other-set').bind('click', function () {
+        $(this).next('textarea').slideToggle();
+        if($(this).children('i').hasClass('fa-angle-down')){
+            $(this).children('i').removeClass('fa-angle-down').addClass('fa-angle-up');
+        }else{
+            $(this).children('i').removeClass('fa-angle-up').addClass('fa-angle-down');
+        }
+    });
+    <?php if($relax){ ?>
+    $('#btn-relax').bind('click',function(){
+        _component.update(
+            'index.php?route=service/advertise/relax&token=<?php echo $token?>',
+            {mode:'targeting',entry_id:'<?php echo $targeting_id ?>'}
+        );
+    });
+    <?php } ?>
+    $('#history').delegate('.pagination a', 'click', function(e) {
+        e.preventDefault();
+        $('#history').load(this.href);
+    });
+    $('#history').load('index.php?route=service/advertise_targeting/history&token=<?php echo $token; ?>&targeting_id=<?php echo $targeting_id; ?>');
+
+//--></script>
+<style>
+    .other-set{
+        position:absolute;
+        right:15px;
+        top:10px;
+        cursor:pointer;
+    }
+</style>

@@ -1,0 +1,523 @@
+<?php
+class ControllerUserUserModule extends Controller {
+	private $error = array();
+
+	public function index() {
+		$this->load->language('user/user_module');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/user_module');
+		if(!empty($this->request->get['permission'])){
+			$this->permission();
+		}else{
+			$this->getList();
+		}
+	}
+
+	public function add() {
+		$this->load->language('user/user_module');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/user_module');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm('user/user_module/add')) {
+		$permission = array();
+			if(!empty($this->request->post['permission'])){
+				$tmp_permission = $this->request->post['permission'];
+				if(is_array($tmp_permission)){
+					foreach ($tmp_permission as $key => $value) {
+						if($value){
+							$tmp = explode("|", htmlspecialchars_decode($value));
+							if(is_array($tmp)){
+								foreach ($tmp as $item) {
+									if($item) $permission[$key][] = $item;
+								}
+							}
+						}
+					}
+				}
+			}
+			$name = isset($this->request->post['name']) ? $this->request->post['name'] : '';
+			$decription = isset($this->request->post['decription']) ? $this->request->post['decription'] : $name;
+			
+			$this->model_user_user_module->addUserModule(array('name'=>$name,'decription'=>$decription,'permission'=>$permission));
+
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+
+			if (isset($this->request->get['sort'])) {
+				$url .= '&sort=' . $this->request->get['sort'];
+			}
+
+			if (isset($this->request->get['order'])) {
+				$url .= '&order=' . $this->request->get['order'];
+			}
+
+			if (isset($this->request->get['page'])) {
+				$url .= '&page=' . $this->request->get['page'];
+			}
+
+			$this->response->redirect($this->url->link('user/user_module', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+		}
+
+		$this->getForm();
+	}
+
+	public function edit() {
+		$this->load->language('user/user_module');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/user_module');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm('user/user_module/edit')) {
+			$permission = array();
+			if(!empty($this->request->post['permission'])){
+				$tmp_permission = $this->request->post['permission'];
+				if(is_array($tmp_permission)){
+					foreach ($tmp_permission as $key => $value) {
+						if($value){
+							$tmp = explode("|", htmlspecialchars_decode($value));
+							if(is_array($tmp)){
+								foreach ($tmp as $item) {
+									if($item) $permission[$key][] = $item;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			$name = isset($this->request->post['name']) ? $this->request->post['name'] : '';
+			$decription = isset($this->request->post['decription']) ? $this->request->post['decription'] : $name;
+			$this->model_user_user_module->editUserModule($this->request->get['module_id'], array('name'=>$name,'decription'=>$decription,'permission'=>$permission));
+
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+
+			if (isset($this->request->get['sort'])) {
+				$url .= '&sort=' . $this->request->get['sort'];
+			}
+
+			if (isset($this->request->get['order'])) {
+				$url .= '&order=' . $this->request->get['order'];
+			}
+
+			if (isset($this->request->get['page'])) {
+				$url .= '&page=' . $this->request->get['page'];
+			}
+
+			$this->response->redirect($this->url->link('user/user_module', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+		}
+
+		$this->getForm();
+	}
+
+	public function delete() {
+		$this->load->language('user/user_module');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/user_module');
+
+		if (isset($this->request->post['selected']) ) {
+			foreach ($this->request->post['selected'] as $module_id) {
+				$this->model_user_user_module->deleteUserModule($module_id);
+			}
+
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+
+			if (isset($this->request->get['sort'])) {
+				$url .= '&sort=' . $this->request->get['sort'];
+			}
+
+			if (isset($this->request->get['order'])) {
+				$url .= '&order=' . $this->request->get['order'];
+			}
+
+			if (isset($this->request->get['page'])) {
+				$url .= '&page=' . $this->request->get['page'];
+			}
+
+			$this->response->redirect($this->url->link('user/user_module', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+		}
+
+		$this->getList();
+	}
+
+	protected function getList() {
+		if (isset($this->request->get['sort'])) {
+			$sort = $this->request->get['sort'];
+		} else {
+			$sort = 'name';
+		}
+
+		if (isset($this->request->get['order'])) {
+			$order = $this->request->get['order'];
+		} else {
+			$order = 'ASC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$page = $this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$url = '';
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('user/user_module', 'token=' . $this->session->data['token'] . $url, 'SSL')
+		);
+
+		$data['add'] = $this->url->link('user/user_module/add', 'token=' . $this->session->data['token'] . $url, 'SSL');
+		$data['delete'] = $this->url->link('user/user_module/delete', 'token=' . $this->session->data['token'] . $url, 'SSL');
+
+		$data['user_modules'] = array();
+
+		$filter_data = array(
+			'sort'  => $sort,
+			'order' => $order,
+			'start' => ($page - 1) * $this->config->get('config_limit_admin'),
+			'limit' => $this->config->get('config_limit_admin')
+		);
+
+		$user_group_total = $this->model_user_user_module->getTotalUserModules();
+
+		$results = $this->model_user_user_module->getUserModules($filter_data);
+
+		foreach ($results as $result) {
+			$data['user_modules'][] = array(
+				'module_id' => $result['module_id'],
+				'name'          => $result['name'],
+				'decription'		 	=> $result['decription'],
+				'edit'          => $this->url->link('user/user_module/edit', 'token=' . $this->session->data['token'] . '&module_id=' . $result['module_id'] . $url, 'SSL')
+			);
+		}
+
+		$data['heading_title'] = $this->language->get('heading_title');
+		
+		$data['text_list'] = $this->language->get('text_list');
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['text_confirm'] = $this->language->get('text_confirm');
+
+		$data['column_name'] = $this->language->get('column_name');
+		$data['column_decription'] = $this->language->get('column_decription');
+		$data['column_action'] = $this->language->get('column_action');
+
+		$data['button_add'] = $this->language->get('button_add');
+		$data['button_edit'] = $this->language->get('button_edit');
+		$data['button_delete'] = $this->language->get('button_delete');
+
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->session->data['success'])) {
+			$data['success'] = $this->session->data['success'];
+
+			unset($this->session->data['success']);
+		} else {
+			$data['success'] = '';
+		}
+
+		if (isset($this->request->post['selected'])) {
+			$data['selected'] = (array)$this->request->post['selected'];
+		} else {
+			$data['selected'] = array();
+		}
+
+		$url = '';
+
+		if ($order == 'ASC') {
+			$url .= '&order=DESC';
+		} else {
+			$url .= '&order=ASC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['sort_name'] = $this->url->link('user/user_module', 'token=' . $this->session->data['token'] . '&sort=name' . $url, 'SSL');
+
+		$url = '';
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		$pagination = new Pagination();
+		$pagination->total = $user_group_total;
+		$pagination->page = $page;
+		$pagination->limit = $this->config->get('config_limit_admin');
+		$pagination->url = $this->url->link('user/user_module', 'token=' . $this->session->data['token'] . $url . '&page={page}', 'SSL');
+
+		$data['pagination'] = $pagination->render();
+
+		$data['results'] = sprintf($this->language->get('text_pagination'), ($user_group_total) ? (($page - 1) * $this->config->get('config_limit_admin')) + 1 : 0, ((($page - 1) * $this->config->get('config_limit_admin')) > ($user_group_total - $this->config->get('config_limit_admin'))) ? $user_group_total : ((($page - 1) * $this->config->get('config_limit_admin')) + $this->config->get('config_limit_admin')), $user_group_total, ceil($user_group_total / $this->config->get('config_limit_admin')));
+
+		$data['sort'] = $sort;
+		$data['order'] = $order;
+
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+
+		$this->response->setOutput($this->load->view('user/user_module_list.tpl', $data));
+	}
+
+	protected function getForm() {
+		$data['heading_title'] = $this->language->get('heading_title');
+		$this->document->addStyle(TPL_JS."jstree/dist/themes/default/style.min.css");
+        $this->document->addScript(TPL_JS.'jstree/dist/jstree.min.js');
+
+		$data['text_form'] = !isset($this->request->get['module_id']) ? $this->language->get('text_add') : $this->language->get('text_edit');
+		$data['text_select_all'] = $this->language->get('text_select_all');
+		$data['text_expand_collapse'] = $this->language->get('text_expand_collapse');
+		$data['text_unselect_all'] = $this->language->get('text_unselect_all');
+
+		$data['entry_name'] = $this->language->get('entry_name');
+		$data['entry_decription'] = $this->language->get('entry_decription');
+		$data['entry_users'] = $this->language->get('entry_users');
+		$data['entry_permission'] = $this->language->get('entry_permission');
+		$data['entry_access'] = $this->language->get('entry_access');
+		$data['entry_modify'] = $this->language->get('entry_modify');
+		$data['entry_log'] = $this->language->get('entry_log');
+		$data['button_save'] = $this->language->get('button_save');
+		$data['button_cancel'] = $this->language->get('button_cancel');
+		$data['text_admin_group'] = $this->language->get('text_admin_group');
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->error['name'])) {
+			$data['error_name'] = $this->error['name'];
+		} else {
+			$data['error_name'] = '';
+		}
+
+		if (isset($this->error['decription'])) {
+			$data['error_decription'] = $this->error['decription'];
+		} else {
+			$data['error_decription'] = '';
+		}
+
+		$url = '';
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('user/user_module', 'token=' . $this->session->data['token'] . $url, 'SSL')
+		);
+
+		if (!isset($this->request->get['module_id'])) {
+			$data['action'] = $this->url->link('user/user_module/add', 'token=' . $this->session->data['token'] . $url, 'SSL');
+		} else {
+			$data['action'] = $this->url->link('user/user_module/edit', 'token=' . $this->session->data['token'] . '&module_id=' . $this->request->get['module_id'] . $url, 'SSL');
+		}
+
+		$data['cancel'] = $this->url->link('user/user_module', 'token=' . $this->session->data['token'] . $url, 'SSL');
+
+		if (isset($this->request->get['module_id']) && $this->request->server['REQUEST_METHOD'] != 'POST') {
+			$user_module_info = $this->model_user_user_module->getUserModule($this->request->get['module_id']);
+		}
+
+		if (isset($this->request->post['name'])) {
+			$data['name'] = $this->request->post['name'];
+		} elseif (!empty($user_module_info['name'])) {
+			$data['name'] = $user_module_info['name'];
+		} else {
+			$data['name'] = '';
+		}
+
+		if (isset($this->request->post['decription'])) {
+			$data['decription'] = $this->request->post['decription'];
+		} elseif (!empty($user_module_info['decription'])) {
+			$data['decription'] = $user_module_info['decription'];
+		} else {
+			$data['decription'] = '';
+		}
+		if (isset($this->request->post['permission']['access'])) {
+			$data['access'] = $this->request->post['permission']['access'];
+		} elseif (isset($user_module_info['permission']['access'])) {
+			$data['access'] = $user_module_info['permission']['access'];
+		} else {
+			$data['access'] = array();
+		}
+
+		if (isset($this->request->post['permission']['modify'])) {
+			$data['modify'] = $this->request->post['permission']['modify'];
+		} elseif (isset($user_module_info['permission']['modify'])) {
+			$data['modify'] = $user_module_info['permission']['modify'];
+		} else {
+			$data['modify'] = array();
+		}
+
+		if (isset($this->request->post['permission']['log'])) {
+			$data['log'] = $this->request->post['permission']['log'];
+		} elseif (isset($user_module_info['permission']['log'])) {
+			$data['log'] = $user_module_info['permission']['log'];
+		} else {
+			$data['log'] = array();
+		}
+		$data['token'] =$this->session->data['token'];
+		$data['module_id'] = isset($this->request->get['module_id']) ? $this->request->get['module_id'] :false;
+		//$data['users'] = isset($this->request->get['module_id']) ? $this->model_user_user_module->getUsersByGroupID($this->request->get['module_id']) : false;
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+
+		$this->response->setOutput($this->load->view('user/user_module_form.tpl', $data));
+	}
+
+	protected function validateForm($route) {
+		if (!$this->user->hasPermission($route)) {
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		if ((utf8_strlen($this->request->post['name']) < 3) || (utf8_strlen($this->request->post['name']) > 64)) {
+			$this->error['name'] = $this->language->get('error_name');
+		}
+
+		return !$this->error;
+	}
+
+	protected function validateDelete($route) {
+		if (!$this->user->hasPermission($route)) {
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		$this->load->model('user/user');
+
+		foreach ($this->request->post['selected'] as $module_id) {
+			$user_total = $this->model_user_user->getTotalUsersByGroupId($module_id);
+
+			if ($user_total) {
+				$this->error['warning'] = sprintf($this->language->get('error_user'), $user_total);
+			}
+		}
+
+		return !$this->error;
+	}
+
+
+  	private function permission(){
+  		$ignore = $this->user->getIgnoreRoutes();		
+		$this->load->model('user/user_module');
+		$type = isset($this->request->get['type']) ? strtolower(trim($this->request->get['type'])) : 'access';
+		$module_id = isset($this->request->get['module_id']) ? (int)$this->request->get['module_id'] : false;
+		if ($module_id) {
+			$user_module_info = $this->model_user_user_module->getUserModule($this->request->get['module_id']);
+			$module_permission = $user_module_info['permission'];
+			if(!isset($module_permission['access'])){
+				$module_permission['access'] = array();
+			}
+			if(!isset($module_permission['modify'])){
+				$module_permission['modify'] = array();
+			}
+			if(!isset($module_permission['log'])){
+				$module_permission['log'] = array();
+			}
+		}else{
+			$module_permission = array('access'=>array(),'modify'=>array(),'log'=>array());
+		}
+		$this->load->model('setting/permission_node');
+		$nodetree = $this->model_setting_permission_node->getNodeTree(0,'file');
+		$file_tree = array();
+		foreach ($nodetree as $trunk) {
+			$module=array();
+			$module['text'] = $trunk['name'];
+			$module['id'] = $trunk['node_id'];
+			$module['mode'] = 'module';
+			$module['state'] = array('opened'=>true);
+			$module['children'] = array();
+			if(isset($trunk['children'])){
+				foreach ($trunk['children'] as $branch) {
+					if(in_array($branch['path'], $ignore)){continue;}
+					$controller = array();
+					$controller['text'] = $branch['name'];
+					$controller['id'] = $branch['node_id'];
+					$controller['mode'] = 'controller';
+					$controller['title'] ='Controller : '.$trunk['name'].'/'.$branch['name'];
+					if(isset($branch['children'])){
+						foreach ($branch['children'] as $leaf){	
+							if(in_array($leaf['path'], $ignore)){continue;}					
+							$controller['children'][] = array(
+								'text' => $leaf['name'],
+								'children' => false,
+								'id' => $leaf['node_id'],
+								'path'=> $leaf['path'],
+								'key' => $leaf['key'] ,
+								'title'=> $leaf['name'],
+								'icon' => "jstree-file",
+								'state'=>array('checked'=>in_array($leaf['path'], $module_permission[$type]) ? true: false)
+							);
+						}
+					}
+					$module['children'][] = $controller;
+				}
+			}
+			if(count($module['children'])){
+				$file_tree[] = 	$module;
+			}
+				
+		}
+		sort($file_tree);
+		$this->response->setOutput(json_encode(array('text'=>'<b>'.ucfirst($type).'</b>','state'=>array('opened'=>true),'children'=>$file_tree)));
+  	}
+
+  	
+}

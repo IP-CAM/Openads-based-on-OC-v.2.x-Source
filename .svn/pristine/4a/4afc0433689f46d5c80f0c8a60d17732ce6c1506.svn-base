@@ -1,0 +1,946 @@
+<?php
+class ControllerServicePublish extends Controller {
+    private $error = array();
+
+    public function index() {
+        $this->load->language('service/publish');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+        
+        $this->document->addStyle(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.css');
+        $this->document->addScript(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.js');
+        $this->document->addStyle(TPL_JS.'fancybox/jquery.fancybox.css?v=2.1.5');
+        $this->document->addScript(TPL_JS.'fancybox/jquery.fancybox.pack.js?v=2.1.5');
+        $this->document->addScript(TPL_JS.'form.js');
+
+        $this->load->model('service/publish');
+
+        $this->getList();
+    }
+
+    public function edit() {
+        $this->load->language('service/publish');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+        $this->document->addScript(TPL_JS.'form.js');
+        $this->document->addScript(TPL_JS.'jquery.json.min.js');
+        $this->document->addScript(TPL_JS.'jquery.ajaxupload.js');
+        $this->document->addStyle(TPL_JS.'fancybox/jquery.fancybox.css?v=2.1.5');
+        $this->document->addScript(TPL_JS.'fancybox/jquery.fancybox.pack.js?v=2.1.5');
+        $this->load->model('service/publish');
+
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate('service/publish/edit')) {
+            $this->model_service_publish->editAdvertise($this->request->get['advertise_id'],$this->request->post);
+            
+
+            $this->session->data['success'] = $this->language->get('text_success');
+
+            $url = '';
+
+            if (isset($this->request->get['filter_ad_sn'])) {
+                $url .= '&filter_ad_sn=' . $this->request->get['filter_ad_sn'];
+            }
+
+            if (isset($this->request->get['filter_customer_id'])) {
+                $url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+            }
+
+            if (isset($this->request->get['filter_publish'])) {
+                $url .= '&filter_publish=' . $this->request->get['filter_publish'];
+            }
+            if (isset($this->request->get['filter_in_charge'])) {
+                $url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+            }
+
+            if (isset($this->request->get['filter_targeting'])) {
+                $url .= '&filter_targeting=' . $this->request->get['filter_targeting'];
+            }
+            if (isset($this->request->get['filter_post'])) {
+                $url .= '&filter_post=' . $this->request->get['filter_post'];
+            }
+            if (isset($this->request->get['filter_photo'])) {
+                $url .= '&filter_photo=' . $this->request->get['filter_photo'];
+            }
+            
+            if (isset($this->request->get['filter_date_added'])) {
+                $url .= '&filter_date_added=' . $this->request->get['filter_date_added'];
+            }
+
+            if (isset($this->request->get['filter_date_modified'])) {
+                $url .= '&filter_date_modified=' . $this->request->get['filter_date_modified'];
+            }
+
+            if (isset($this->request->get['sort'])) {
+                $url .= '&sort=' . $this->request->get['sort'];
+            }
+
+            if (isset($this->request->get['order'])) {
+                $url .= '&order=' . $this->request->get['order'];
+            }
+
+            if (isset($this->request->get['page'])) {
+                $url .= '&page=' . $this->request->get['page'];
+            }
+
+            $this->response->redirect($this->url->link('service/publish', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+        }
+
+        $this->getForm();
+    }
+
+    protected function getList() {
+
+        if (isset($this->request->get['filter_ad_sn'])) {
+            $filter_ad_sn = $this->request->get['filter_ad_sn'];
+        } else {
+            $filter_ad_sn = null;
+        }
+        if (isset($this->request->get['filter_product'])) {
+            $filter_product = $this->request->get['filter_product'];
+        } else {
+            $filter_product = null;
+        }
+        if (isset($this->request->get['filter_ad_account'])) {
+            $filter_ad_account = $this->request->get['filter_ad_account'];
+        } else {
+            $filter_ad_account = null;
+        }
+        if (isset($this->request->get['filter_target_url'])) {
+            $filter_target_url = $this->request->get['filter_target_url'];
+        } else {
+            $filter_target_url = null;
+        }
+        if (isset($this->request->get['filter_customer_id'])) {
+            $filter_customer_id = $this->request->get['filter_customer_id'];
+        } else {
+            $filter_customer_id = null;
+        }
+        if (isset($this->request->get['filter_targeting_sn'])) {
+            $filter_targeting_sn = $this->request->get['filter_targeting_sn'];
+        } else {
+            $filter_targeting_sn = null;
+        }
+        if (isset($this->request->get['filter_publish'])) {
+            $filter_publish = $this->request->get['filter_publish'];
+        } else {
+            $filter_publish = null;
+        }
+        if (isset($this->request->get['filter_progress'])) {
+            $filter_progress = $this->request->get['filter_progress'];
+        } else {
+            $filter_progress = null;
+        }
+        if (isset($this->request->get['filter_in_charge'])) {
+            $filter_in_charge = $this->request->get['filter_in_charge'];
+        } else {
+            $filter_in_charge = null;
+        }
+
+        if (isset($this->request->get['filter_modified_start'])) {
+            $filter_modified_start = $this->request->get['filter_modified_start'];
+        } else {
+            $filter_modified_start = null;
+        }
+
+        if (isset($this->request->get['filter_modified_end'])) {
+            $filter_modified_end = $this->request->get['filter_modified_end'];
+        } else {
+            $filter_modified_end = null;
+        }
+
+        if (isset($this->request->get['filter_message'])) {
+            $filter_message = $this->request->get['filter_message'];
+        } else {
+            $filter_message = null;
+        }
+
+        if (isset($this->request->get['sort'])) {
+            $sort = $this->request->get['sort'];
+        } else {
+            $sort = 'a.date_modified';
+        }
+
+        if (isset($this->request->get['order'])) {
+            $order = $this->request->get['order'];
+        } else {
+            $order = 'DESC';
+        }
+
+        if (isset($this->request->get['page'])) {
+            $page = $this->request->get['page'];
+        } else {
+            $page = 1;
+        }
+
+        $url = '';
+
+        if (isset($this->request->get['filter_ad_sn'])) {
+            $url .= '&filter_ad_sn=' . $this->request->get['filter_ad_sn'];
+        }
+        if (isset($this->request->get['filter_product'])) {
+            $url .= '&filter_product=' . $this->request->get['filter_product'];
+        }
+        if (isset($this->request->get['filter_ad_account'])) {
+            $url .= '&filter_ad_account=' . $this->request->get['filter_ad_account'];
+        }
+        if (isset($this->request->get['filter_target_url'])) {
+            $url .= '&filter_target_url=' . urlencode(html_entity_decode($this->request->get['filter_target_url'], ENT_QUOTES, 'UTF-8'));
+        }
+        if (isset($this->request->get['filter_customer_id'])) {
+            $url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+        }
+        if (isset($this->request->get['filter_publish'])) {
+            $url .= '&filter_publish=' . $this->request->get['filter_publish'];
+        }
+        if (isset($this->request->get['filter_in_charge'])) {
+            $url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+        }
+        if (isset($this->request->get['filter_targeting_sn'])) {
+            $url .= '&filter_targeting_sn=' . $this->request->get['filter_targeting_sn'];
+        }
+        if (isset($this->request->get['filter_progress'])) {
+            $url .= '&filter_progress=' . $this->request->get['filter_progress'];
+        }
+        if (isset($this->request->get['filter_modified_start'])) {
+            $url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+        }
+        if (isset($this->request->get['filter_modified_end'])) {
+            $url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+        }
+
+        if (isset($this->request->get['sort'])) {
+            $url .= '&sort=' . $this->request->get['sort'];
+        }
+
+        if (isset($this->request->get['order'])) {
+            $url .= '&order=' . $this->request->get['order'];
+        }
+
+        if (isset($this->request->get['page'])) {
+            $url .= '&page=' . $this->request->get['page'];
+        }
+
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link('service/publish', 'token=' . $this->session->data['token'] . $url, 'SSL')
+        );
+        $this->load->model('customer/customer');
+        $this->load->model('user/user');
+        $this->load->model('catalog/product');
+        $this->load->model('localisation/targeting');
+        $this->load->model('localisation/advertise_publish');
+        $data['products'] = $this->model_catalog_product->getProducts();
+
+        $data['add'] = $this->url->link('service/publish/add', 'token=' . $this->session->data['token'], 'SSL');
+
+        $data['advertises'] = array();
+        $limit = $this->config->get('config_limit_admin');
+        $filter_data = array(
+            'filter_ad_sn'          => $filter_ad_sn,
+            'filter_product'        => $filter_product,
+            'filter_ad_account'     => $filter_ad_account,
+            'filter_target_url'     => $filter_target_url,
+            'filter_customer_id'    => $filter_customer_id,
+            'filter_in_charge'      => $filter_in_charge,
+            'filter_publish'        => $filter_publish,
+            'filter_targeting_sn'   => $filter_targeting_sn,
+            'filter_progress'       => $filter_progress,
+            'filter_modified_start' => $filter_modified_start,
+            'filter_modified_end'   => $filter_modified_end,
+            'filter_message'        => $filter_message,
+            'sort'                  => $sort,
+            'order'                 => $order,
+            'start'                 => ($page - 1) * $limit,
+            'limit'                 => $limit
+        );
+        $total = $this->model_service_publish->getTotalAdvertises($filter_data);
+
+        $results = $this->model_service_publish->getAdvertises($filter_data);
+        foreach ($results as $result) {
+            $product_info = $this->model_catalog_product->getProduct($result['product_id']);
+            if(empty($product_info['name'])){
+                $product = sprintf(getBSTagStyle(2),$this->language->get('text_unknown'));
+            }else{
+                $product = sprintf(getBSTagStyle(0),$product_info['name']);
+            }
+            $publish = $this->model_localisation_advertise_publish->getAdvertisePublish($result['publish']);
+            $charger = $this->model_user_user->getUser($result['in_charge']);
+            $msg = $this->model_service_publish->getUnreadMessage($result['advertise_id']);
+            $location = array();
+            $countries = explode(",", $result['location']);
+            if(is_array($countries)){
+                foreach ($countries as $country_id) {
+                    $targeting = $this->model_localisation_targeting->getTargeting($country_id);
+                    if(!empty($targeting['value'])){
+                        $location[] = $targeting['name'];
+                    }
+                }
+            }            
+            $data['advertises'][] = array(
+                'advertise_id'  => $result['advertise_id'],
+                'advertise_sn'  => $result['advertise_sn'],
+                'ad_account'    => $result['ad_account'],
+                'product'       => $product,
+                'target_url'    => $result['target_url'],
+                'customer'      => $result['customer'],
+                'charger'       => empty($charger['username']) ? '' : $charger['nickname'],
+                'progress'      => $result['progress'],
+                'targeting_sn'  => $result['targeting_sn'],
+                'publish'       => $result['publish'],
+                'publish_text'  => empty($publish['name']) ? $this->language->get('text_exception') : $publish['name'],
+                'location'      => implode("<br>", $location),
+                'msg'           => $msg,
+                'date_added'    => date('Y-m-d', strtotime($result['date_added'])).'<br>'.date('H:i:s',strtotime($result['date_added'])),
+                'date_modified' => date('Y-m-d', strtotime($result['date_modified'])).'<br>'.date('H:i:s',strtotime($result['date_modified'])),
+                'edit'          => $this->url->link('service/publish/edit', 'token=' . $this->session->data['token'] . '&advertise_id=' . $result['advertise_id'] . $url, 'SSL'),
+            );
+        }
+
+        $data['heading_title'] = $this->language->get('heading_title');
+        
+        $data['text_list'] = $this->language->get('text_list');
+        $data['text_no_results'] = $this->language->get('text_no_results');
+        $data['text_confirm'] = $this->language->get('text_confirm');
+        $data['text_missing'] = $this->language->get('text_missing');
+
+        $data['column_ad_sn'] = $this->language->get('column_ad_sn');
+        $data['column_ad_account'] = $this->language->get('column_ad_account');
+        $data['column_product'] = $this->language->get('column_product');
+        $data['column_target_url'] = $this->language->get('column_target_url');
+        $data['column_customer'] = $this->language->get('column_customer');
+        $data['column_publish'] = $this->language->get('column_publish');
+        $data['column_in_charge'] = $this->language->get('column_in_charge');
+        $data['column_date_added'] = $this->language->get('column_date_added');
+        $data['column_date_modified'] = $this->language->get('column_date_modified');
+        $data['column_progress'] = $this->language->get('column_progress');
+        $data['column_targeting_sn'] = $this->language->get('column_targeting_sn');
+        $data['column_action'] = $this->language->get('column_action');
+        $data['column_location'] = $this->language->get('column_location');
+
+        $data['entry_ad_sn'] = $this->language->get('entry_ad_sn');
+        $data['entry_ad_account'] = $this->language->get('entry_ad_account');
+        $data['entry_product'] = $this->language->get('entry_product');
+        $data['entry_target_url'] = $this->language->get('entry_target_url');
+        $data['entry_customer'] = $this->language->get('entry_customer');
+        $data['entry_targeting_sn'] = $this->language->get('entry_targeting_sn');
+        $data['entry_progress'] = $this->language->get('entry_progress');
+        $data['entry_in_charge'] = $this->language->get('entry_in_charge');
+        $data['entry_publish'] = $this->language->get('entry_publish');
+        $data['entry_date_added'] = $this->language->get('entry_date_added');
+        $data['entry_modified_start'] = $this->language->get('entry_modified_start');
+        $data['entry_modified_end'] = $this->language->get('entry_modified_end');
+
+        $data['button_add'] = $this->language->get('button_add');
+        $data['button_edit'] = $this->language->get('button_edit');
+        $data['button_delete'] = $this->language->get('button_delete');
+        $data['button_filter'] = $this->language->get('button_filter');
+        $data['button_view'] = $this->language->get('button_view');
+
+        
+        $data['token'] = $this->session->data['token'];
+
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
+        } else {
+            $data['error_warning'] = '';
+        }
+
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+
+        if (isset($this->request->post['selected'])) {
+            $data['selected'] = (array)$this->request->post['selected'];
+        } else {
+            $data['selected'] = array();
+        }
+
+        $url = '';
+
+        if (isset($this->request->get['filter_ad_sn'])) {
+            $url .= '&filter_ad_sn=' . $this->request->get['filter_ad_sn'];
+        }
+        if (isset($this->request->get['filter_product'])) {
+            $url .= '&filter_product=' . $this->request->get['filter_product'];
+        }
+        if (isset($this->request->get['filter_ad_account'])) {
+            $url .= '&filter_ad_account=' . $this->request->get['filter_ad_account'];
+        }
+        if (isset($this->request->get['filter_targeting_sn'])) {
+            $url .= '&filter_targeting_sn=' . $this->request->get['filter_targeting_sn'];
+        }
+        if (isset($this->request->get['filter_progress'])) {
+            $url .= '&filter_progress=' . $this->request->get['filter_progress'];
+        }        
+        if (isset($this->request->get['filter_target_url'])) {
+            $url .= '&filter_target_url=' . urlencode(html_entity_decode($this->request->get['filter_target_url'], ENT_QUOTES, 'UTF-8'));
+        }
+        if (isset($this->request->get['filter_customer_id'])) {
+            $url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+        }
+        if (isset($this->request->get['filter_publish'])) {
+            $url .= '&filter_publish=' . $this->request->get['filter_publish'];
+        }
+        if (isset($this->request->get['filter_in_charge'])) {
+            $url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+        }
+        if (isset($this->request->get['filter_modified_start'])) {
+            $url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+        }
+        if (isset($this->request->get['filter_modified_end'])) {
+            $url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+        }
+
+        if ($order == 'ASC') {
+            $url .= '&order=DESC';
+        } else {
+            $url .= '&order=ASC';
+        }
+
+        if (isset($this->request->get['page'])) {
+            $url .= '&page=' . $this->request->get['page'];
+        }
+        $data['sort_target_url'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.target_url' . $url, 'SSL');
+        $data['sort_targeting_sn'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=at.targeting_sn' . $url, 'SSL');
+        $data['sort_progress'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.progress' . $url, 'SSL');
+        $data['sort_ad'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.ad_sn' . $url, 'SSL');
+        $data['sort_product'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.product_id' . $url, 'SSL');
+        $data['sort_ad_account'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.ad_account' . $url, 'SSL');
+        $data['sort_customer'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=customer' . $url, 'SSL');
+        $data['sort_publish'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.publish' . $url, 'SSL');
+        $data['sort_in_charge'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.in_charge' . $url, 'SSL');
+        $data['sort_date_added'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.date_added' . $url, 'SSL');
+        $data['sort_date_modified'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=a.date_modified' . $url, 'SSL');
+        $data['sort_location'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . '&sort=at.location' . $url, 'SSL');
+
+        $url = '';
+
+        if (isset($this->request->get['filter_ad_sn'])) {
+            $url .= '&filter_ad_sn=' . $this->request->get['filter_ad_sn'];
+        }
+        if (isset($this->request->get['filter_product'])) {
+            $url .= '&filter_product=' . $this->request->get['filter_product'];
+        }
+        if (isset($this->request->get['filter_ad_account'])) {
+            $url .= '&filter_ad_account=' . $this->request->get['filter_ad_account'];
+        }
+        if (isset($this->request->get['filter_targeting_sn'])) {
+            $url .= '&filter_targeting_sn=' . $this->request->get['filter_targeting_sn'];
+        }
+        if (isset($this->request->get['filter_progress'])) {
+            $url .= '&filter_progress=' . $this->request->get['filter_progress'];
+        }
+        if (isset($this->request->get['filter_target_url'])) {
+            $url .= '&filter_target_url=' . urlencode(html_entity_decode($this->request->get['filter_target_url'], ENT_QUOTES, 'UTF-8'));
+        }
+        if (isset($this->request->get['filter_customer_id'])) {
+            $url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+        }
+        if (isset($this->request->get['filter_publish'])) {
+            $url .= '&filter_publish=' . $this->request->get['filter_publish'];
+        }
+        if (isset($this->request->get['filter_in_charge'])) {
+            $url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+        }
+        if (isset($this->request->get['filter_modified_start'])) {
+            $url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+        }
+
+        if (isset($this->request->get['filter_modified_end'])) {
+            $url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+        }
+
+        if (isset($this->request->get['sort'])) {
+            $url .= '&sort=' . $this->request->get['sort'];
+        }
+
+        if (isset($this->request->get['order'])) {
+            $url .= '&order=' . $this->request->get['order'];
+        }
+
+        $pagination = new Pagination();
+        $pagination->total = $total;
+        $pagination->page = $page;
+        $pagination->limit = $limit;
+        $pagination->url = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . $url . '&page={page}', 'SSL');
+
+        $data['pagination'] = $pagination->render();
+
+        $data['results'] = sprintf($this->language->get('text_pagination'), ($total) ? (($page - 1) * $limit) + 1 : 0, ((($page - 1) * $limit) > ($total - $limit)) ? $total : ((($page - 1) * $limit) + $limit), $total, ceil($total / $limit));
+
+        $data['filter_ad_sn'] = $filter_ad_sn;
+        $data['filter_ad_account'] = $filter_ad_account;
+        $data['filter_product'] = $filter_product;
+        $data['filter_progress'] = $filter_progress;
+        $data['filter_targeting_sn'] = $filter_targeting_sn;
+        $data['filter_target_url'] = $filter_target_url;
+        $data['filter_customer_id'] = $filter_customer_id;
+        $data['filter_in_charge'] = $filter_in_charge;
+        $data['filter_publish'] = explode(",", $filter_publish);
+        $data['filter_modified_start'] = $filter_modified_start;
+        $data['filter_modified_end'] = $filter_modified_end;
+        $data['filter_customer'] = '';
+        if($filter_customer_id){
+            $customer = $this->model_customer_customer->getCustomer($filter_customer_id);
+            $data['filter_customer'] = empty($customer['username']) ? '' : $customer['username'].' '.$customer['nickname'];
+        }        
+        $this->load->model('localisation/advertise_publish');
+        $data['ad_publishes'] = $this->model_localisation_advertise_publish->getAdvertisePublishes();
+
+        $this->load->model('user/user');
+        $data['contributors'] = $this->model_user_user->getUsers();
+
+
+        $data['sort'] = $sort;
+        $data['order'] = $order;
+
+        $data['header'] = $this->load->controller('common/header');
+        $data['column_left'] = $this->load->controller('common/column_left');
+        $data['footer'] = $this->load->controller('common/footer');
+
+        $this->response->setOutput($this->load->view('service/publish_list.tpl', $data));
+    }
+
+    public function getForm() {
+        $data['heading_title'] = $this->language->get('heading_title');
+        
+        $data['text_form'] = !isset($this->request->get['advertise_id']) ? $this->language->get('text_add') : $this->language->get('text_edit');
+        $data['text_no_results'] = $this->language->get('text_no_results');
+        $data['text_default'] = $this->language->get('text_default');
+        $data['text_select'] = $this->language->get('text_select');
+        $data['text_none'] = $this->language->get('text_none');
+        $data['text_loading'] = $this->language->get('text_loading');
+        $data['text_order'] = $this->language->get('text_order');
+        $data['text_history'] = $this->language->get('text_history');
+        $data['text_loading'] = $this->language->get('text_loading');
+        $data['text_copy'] = $this->language->get('text_copy');
+        $data['entry_customer'] = $this->language->get('entry_customer');
+        $data['entry_website'] = $this->language->get('entry_website');
+        $data['entry_product'] = $this->language->get('entry_product');
+        $data['entry_target_url'] = $this->language->get('entry_target_url');
+        $data['entry_in_charge'] = $this->language->get('entry_in_charge');
+        $data['entry_date_added'] = $this->language->get('entry_date_added');
+        $data['entry_note'] = $this->language->get('entry_note');
+        $data['entry_publish'] = $this->language->get('entry_publish');
+        $data['entry_status'] = $this->language->get('entry_status');
+        $data['entry_notify'] = $this->language->get('entry_notify');
+        $data['entry_amount'] = $this->language->get('entry_amount');
+        $data['entry_ad_account'] = $this->language->get('entry_ad_account');
+        $data['entry_progress'] = $this->language->get('entry_progress');
+        $data['entry_targeting_sn'] = $this->language->get('entry_targeting_sn');
+
+        $data['button_save'] = $this->language->get('button_save');
+        $data['button_cancel'] = $this->language->get('button_cancel');
+        $data['button_continue'] = $this->language->get('button_continue');
+        $data['button_back'] = $this->language->get('button_back');
+        $data['button_remove'] = $this->language->get('button_remove');
+        $data['button_history_add'] = $this->language->get('button_history_add');
+
+        $data['tab_general'] = $this->language->get('tab_general');
+        $data['tab_history'] = $this->language->get('tab_history');
+        $data['tab_tracking'] = $this->language->get('tab_tracking');
+        $data['tab_targeting'] = $this->language->get('tab_targeting');
+        $data['tab_post'] = $this->language->get('tab_post');
+        $data['tab_photo'] = $this->language->get('tab_photo');
+        $data['token'] = $this->session->data['token'];
+
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
+        } else {
+            $data['error_warning'] = '';
+        }
+
+        $url = '';
+
+        if (isset($this->request->get['filter_ad_sn'])) {
+            $url .= '&filter_ad_sn=' . $this->request->get['filter_ad_sn'];
+        }
+        if (isset($this->request->get['filter_product'])) {
+            $url .= '&filter_product=' . $this->request->get['filter_product'];
+        }
+        if (isset($this->request->get['filter_target_url'])) {
+            $url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+        }
+
+        if (isset($this->request->get['filter_post'])) {
+            $url .= '&filter_post=' . $this->request->get['filter_post'];
+        }
+        if (isset($this->request->get['filter_customer_id'])) {
+            $url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+        }
+
+        if (isset($this->request->get['filter_publish'])) {
+            $url .= '&filter_publish=' . $this->request->get['filter_publish'];
+        }
+
+        if (isset($this->request->get['filter_in_charge'])) {
+            $url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+        }
+
+        if (isset($this->request->get['filter_targeting'])) {
+            $url .= '&filter_targeting=' . $this->request->get['filter_targeting'];
+        }
+        if (isset($this->request->get['filter_post'])) {
+            $url .= '&filter_post=' . $this->request->get['filter_post'];
+        }
+        if (isset($this->request->get['filter_photo'])) {
+            $url .= '&filter_photo=' . $this->request->get['filter_photo'];
+        }
+
+        if (isset($this->request->get['filter_date_added'])) {
+            $url .= '&filter_date_added=' . $this->request->get['filter_date_added'];
+        }
+
+        if (isset($this->request->get['filter_date_modified'])) {
+            $url .= '&filter_date_modified=' . $this->request->get['filter_date_modified'];
+        }
+
+        if (isset($this->request->get['sort'])) {
+            $url .= '&sort=' . $this->request->get['sort'];
+        }
+
+        if (isset($this->request->get['order'])) {
+            $url .= '&order=' . $this->request->get['order'];
+        }
+
+        if (isset($this->request->get['page'])) {
+            $url .= '&page=' . $this->request->get['page'];
+        }
+
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link('service/publish', 'token=' . $this->session->data['token'] . $url, 'SSL')
+        );
+
+        $data['cancel'] = $this->url->link('service/publish', 'token=' . $this->session->data['token'] . $url, 'SSL');
+        $advertise_id = false;
+        if (isset($this->request->get['advertise_id']) && ($this->request->server['REQUEST_METHOD'] != 'POST')) {
+            $advertise_id = $this->request->get['advertise_id'];
+            $ad_info = $this->model_service_publish->getAdvertise($advertise_id);
+        }
+
+        if (!empty($ad_info)) {
+            $data['advertise_id'] = $advertise_id;
+            $data['product'] = $ad_info['product'];
+            $data['ad_account'] = $ad_info['ad_account'];
+            $data['company'] = $ad_info['company'];
+            $data['customer'] = $ad_info['customer'];
+            $data['customer_id'] = $ad_info['customer_id'];
+            $data['advertise_sn'] = $ad_info['advertise_sn'];
+            $data['in_charge'] = $ad_info['in_charge'];
+            $data['charger'] = strtolower($ad_info['charger']);
+            $data['publish'] = $ad_info['publish'];
+            $data['publish_text'] = $ad_info['publish_text'];
+            $data['note'] = $ad_info['note'];
+            $data['target_url'] = $ad_info['target_url'];
+            $data['website'] = $ad_info['website'];
+            $data['progress'] = $ad_info['progress'];
+           
+            $data['date_added'] = date('Y-m-d H:i:s',strtotime($ad_info['date_added']));
+            $data['is_in_charge'] = ($this->user->getId() == $ad_info['in_charge']);
+
+            $this->load->model('service/advertise_targeting');
+            $targeting = $this->model_service_advertise_targeting->getAdvertiseTargeting($ad_info['targeting_id'],true);
+            $data['targeting_sn'] = empty($targeting['targeting_sn']) ? '' : $targeting['targeting_sn'];
+        } else {
+            $data['advertise_id'] = 0;
+            $data['customer'] = '';
+            $data['customer_id'] = '';
+            $data['product'] = '';
+            $data['company'] = '';
+            $data['in_charge'] = '';
+            $data['charger'] = '';
+            $data['note'] = '';
+            $data['target_url'] = '';
+            $data['website'] = '';
+            $data['progress'] = '';
+            $data['targeting_sn'] = '';
+            $data['publish_text'] = $this->language->get('text_unknown');
+            $data['publish'] = $this->config->get('config_publish_id');
+            $data['date_added'] = date('Y-m-d H:i:s');
+        }
+        //targeting 
+
+        $data['targeting_tpl'] = $this->component('targeting',$advertise_id,false);
+        $data['post_tpl'] = $this->component('post',$advertise_id,false);
+        $data['photo_tpl'] = $this->component('photo',$advertise_id,false);
+
+        $this->load->model('localisation/advertise_publish');
+
+        $data['ad_publishes'] = $this->model_localisation_advertise_publish->getAdvertisePublishes();
+        $data['publish_terminal'] = $this->config->get('ad_publish_terminal');
+        $data['publish_indesign'] = $this->config->get('ad_publish_indesign');
+        $data['header'] = $this->load->controller('common/header');
+        $data['column_left'] = $this->load->controller('common/column_left');
+        $data['footer'] = $this->load->controller('common/footer');
+
+        $this->response->setOutput($this->load->view('service/publish_form.tpl', $data));
+    }
+    protected function validate($route) {
+
+        if (!$this->user->hasPermission($route) || !in_array($this->user->getId(), $this->config->get('ad_group_publisher'))) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        }
+
+        return !$this->error;
+    }
+
+    public function history() {
+        $this->load->language('service/publish');
+        $this->load->model('service/publish');
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate('service/publish/history')) {
+
+            $this->model_service_publish->addAdvertiseHistory($this->request->get['advertise_id'],$this->request->post);          
+            $this->response->addHeader('Content-Type: application/json');
+            $this->response->setOutput(json_encode(array('success'=>$this->language->get('text_success'))));
+        }else{
+            $data['text_no_results'] = $this->language->get('text_no_results');
+            $data['column_date_added'] = $this->language->get('column_date_added');
+            $data['column_publish'] = $this->language->get('column_publish');
+            $data['column_notify'] = $this->language->get('column_notify');
+            $data['column_note'] = $this->language->get('column_note');
+            $data['column_from'] = $this->language->get('column_from');
+            $data['column_operator'] = $this->language->get('column_operator');
+
+            if (isset($this->request->get['page'])) {
+                $page = $this->request->get['page'];
+            } else {
+                $page = 1;
+            }
+
+            $data['histories'] = array();
+
+            $this->load->model('service/publish');
+
+            $results = $this->model_service_publish->getAdvertiseHistories($this->request->get['advertise_id'], ($page - 1) * 10, 10);
+
+            foreach ($results as $result) {
+
+                $operator = '';
+                if($result['customer_id']){
+                    $operator = $this->language->get('text_author');
+                }else if($result['in_charge']){
+                    $operator = $this->language->get('text_in_charge');
+                }
+                $data['histories'][] = array(
+                    'notify'     => $result['notify'] ? $this->language->get('text_yes') : $this->language->get('text_no'),
+                    'from'      => $result['from']=='member' ? $this->language->get('entry_from_member') : $this->language->get('entry_from_backend'),
+                    'operator'   => $operator,
+                    'publish'    => $result['publish'] == 1 ? $this->language->get('text_queuing') : $result['publish_text'],
+                    'note'       => nl2br($result['note']),
+                    'date_added' => date('Y-m-d H:i:s', strtotime($result['date_added']))
+                );
+            }
+
+            $history_total = $this->model_service_publish->getTotalAdvertiseHistories($this->request->get['advertise_id']);
+
+            $pagination = new Pagination();
+            $pagination->total = $history_total;
+            $pagination->page = $page;
+            $pagination->limit = 10;
+            $pagination->url = $this->url->link('service/publish/history', 'token=' . $this->session->data['token'] . '&advertise_id=' . $this->request->get['advertise_id'] . '&page={page}', 'SSL');
+
+            $data['pagination'] = $pagination->render();
+
+            $data['results'] = sprintf($this->language->get('text_pagination'), ($history_total) ? (($page - 1) * 10) + 1 : 0, ((($page - 1) * 10) > ($history_total - 10)) ? $history_total : ((($page - 1) * 10) + 10), $history_total, ceil($history_total / 10));
+
+            $this->response->setOutput($this->load->view('service/advertise_history.tpl', $data));
+        }
+    }
+
+    public function component($mode='targeting',$advertise_id=false,$display_date_modified=true){
+        $this->load->model('service/publish');
+        $this->load->language('service/publish');
+        
+        if(!$advertise_id){
+            $this->response->setOutput($this->load->view('service/component_error.tpl'));
+            exit;
+        }
+        $ad_info = $this->model_service_publish->getAdvertise($advertise_id,true);
+        if(!$ad_info){
+            $this->response->setOutput($this->load->view('service/component_error.tpl'));
+            exit;
+        }
+        
+        $data = $this->model_service_publish->getAdvertiseComponentProgress($advertise_id,$mode,true);
+        $data['mode_action'] = htmlspecialchars_decode($this->url->link('service/advertise/ajax_data','token='.$this->session->data['token'],'SSL'));
+        $data['mode'] = $mode;
+        $data['target_url'] = $ad_info['target_url'];
+        $data['transfer'] = false;
+        $data['heading_title'] = sprintf($this->language->get('title_detail'),ucfirst($mode));
+        $data['text_view'] = $this->language->get('text_unsubmit');
+        $data['approve'] = false;
+        $data['locked'] = false;
+        $data['unblocked'] = false;
+        switch ($mode) {
+            case 'targeting':
+                $location = $language = array();
+                if(isset($data['location'])){
+                    $location = explode(",", $data['location']);
+                }
+                if(isset($data['language'])){
+                    $language = explode(",", $data['language']);
+                }
+                $data['location'] = is_array($location) ? $location : array();
+                $data['language'] = is_array($language) ? $language : array();
+                $data['entry_location'] = $this->language->get('entry_location');
+                $data['entry_language'] = $this->language->get('entry_language');
+                $data['entry_interest'] = $this->language->get('entry_interest');
+                $data['entry_behavior'] = $this->language->get('entry_behavior');
+                $data['entry_more'] = $this->language->get('entry_more');
+                $data['entry_gender'] = $this->language->get('entry_gender');
+                $data['entry_age'] = $this->language->get('entry_age');
+                $data['entry_age_max'] = $this->language->get('entry_age_max');
+                $data['entry_age_min'] = $this->language->get('entry_age_min');
+                $data['entry_operator'] = $this->language->get('entry_operator');
+                
+                $this->load->model('localisation/targeting');
+                $data['locations'] = $this->model_localisation_targeting->getTargetingsByCategory('location');
+                $data['genders'] = $this->model_localisation_targeting->getTargetingsByCategory('gender');
+                $data['languages'] = $this->model_localisation_targeting->getTargetingsByCategory('language');
+                $this->load->model('localisation/advertise_targeting');
+                $data['targeting_statuses'] = $this->model_localisation_advertise_targeting->getAdvertiseTargetings();
+                $data['reset'] = !in_array($data['status'], $this->config->get('ad_targeting_levels'));
+                break;
+            case 'post':
+                $data['entry_headline'] = $this->language->get('entry_headline');
+                $data['entry_post_text'] = $this->language->get('entry_post_text');
+                $data['entry_author'] = $this->language->get('entry_author');
+                $this->load->model('localisation/advertise_post');
+                $data['post_statuses'] = $this->model_localisation_advertise_post->getAdvertisePosts();
+                $data['reset'] = !in_array($data['status'], $this->config->get('ad_post_levels'));
+                break;
+            case 'photo':
+                if(!empty($data['file'])){
+                    $files = json_decode($data['file'],true);
+                    if(is_array($files)){
+                        $file = array();
+                        $this->load->model('tool/image');
+                        foreach ($files as $item) {
+                            $file[] = array(
+                                'realpath' => HTTP_CATALOG.substr($item['path'],strpos($item['path'],'/')+1),
+                                'name' => $item['name'],
+                                'path' => $item['path'],
+                                'image' => $this->model_tool_image->resize($item['path'], 470, 245,true),
+                                'download'=>$this->url->download(array('token'=>$this->session->data['token'],'path'=>$item['path'])),
+                           );
+                        }
+                        $data['file'] = $file;
+                    }
+                }
+                $data['entry_post_img'] = $this->language->get('entry_post_img');
+                $data['entry_artist'] = $this->language->get('entry_artist');
+                $this->load->model('localisation/advertise_photo');
+                $data['photo_statuses'] = $this->model_localisation_advertise_photo->getAdvertisePhotos();
+                $data['reset'] = !in_array($data['status'], $this->config->get('ad_photo_levels'));
+                
+                break;
+        }
+        
+        $data['token'] = $this->session->data['token'];
+        $data['entry_last_modified'] = $this->language->get('entry_last_modified');
+        $data['entry_id'] = isset($data[$mode.'_id']) ? (int)$data[$mode.'_id'] : 0;
+        $data['overview'] = 1;
+        $data['entry_target_url'] = $this->language->get('entry_target_url');
+        $data['entry_user'] = $this->language->get('entry_user');
+        $data['entry_specify'] = $this->language->get('entry_specify');
+        $data['text_yes'] = $this->language->get('text_yes');
+        $data['text_free_choice'] = $this->language->get('text_free_choice');
+        $data['entry_product'] = $this->language->get('entry_product');
+        $data['entry_note'] = $this->language->get('entry_note');
+        $data['entry_status'] = $this->language->get('entry_status');
+        $data['entry_view'] = $this->language->get('entry_view');
+        $data['text_copy'] = $this->language->get('text_copy');
+        $data['display_date_modified'] = $display_date_modified;
+        $data['text_confirm'] = $this->language->get('text_confirm');
+        $data['text_confirm_reset'] = $this->language->get('text_confirm_reset');
+        $data['text_confirm_reset_artist'] = $this->language->get('text_confirm_reset_artist');
+        $data['text_confirm_relax_targeting'] = $this->language->get('text_confirm_relax_targeting');
+        $data['text_confirm_relax_photo'] = $this->language->get('text_confirm_relax_photo');
+        $data['text_confirm_approve'] = $this->language->get('text_confirm_approve');
+        $data['text_confirm_transfer'] = $this->language->get('text_confirm_transfer');
+
+        $data['button_save'] = $this->language->get('button_save');
+        $data['button_close'] = $this->language->get('button_close');
+        $data['button_transfer'] = $this->language->get('button_transfer');
+        $data['button_reset'] = $this->language->get('button_reset');
+        $this->load->model('user/user');
+        $data['contributors'] = $this->model_user_user->getUsers();
+        $data['users'] = $this->model_user_user->getUsers();
+        return $this->load->view('service/component_'.$mode.'.tpl', $data);
+    }
+
+    function tracking(){
+        $this->load->language('service/publish');
+        $this->load->model('service/publish');
+        $this->load->model('tool/image');
+        $advertise_id = isset($this->request->post['advertise_id']) ? (int)$this->request->post['advertise_id'] : false;
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && isset($this->request->post['text'])){
+            $this->model_service_publish->readMessage($advertise_id);
+            $this->model_service_publish->addAdvertiseTracking($advertise_id,$this->request->post);
+        }
+        $data['advertise_id'] = $advertise_id;
+
+        $data['button_send'] = $this->language->get('button_send');
+        $data['token'] = $this->session->data['token'];
+        $data['button_delete'] = $this->language->get('button_delete');
+        $data['button_download'] = $this->language->get('button_download');
+        $data['error_content'] = $this->language->get('error_content');
+        $trackings = $this->model_service_publish->getAdvertiseTrackings($advertise_id);
+        if(is_array($trackings)){
+            foreach ($trackings as $key => $item) {
+                $trackings[$key]['date'] = date('Y-m-d',strtotime($item['date_added']));
+                $trackings[$key]['time'] = date('H:i:s',strtotime($item['date_added']));
+                $file = array();
+                if(!empty($item['attach'])){
+                    $attaches = json_decode($item['attach'],true);
+                    if(is_array($attaches)){
+                        foreach ($attaches as $attach) {
+                            if(!isset($attach['path']) || !file_exists($attach['path'])){
+                                continue;
+                            }
+                            $_path = substr($attach['path'],strpos($attach['path'],'/')+1);
+                            $file[] = array(
+                                'realpath' => HTTP_CATALOG.$_path,
+                                'name' => $attach['name'],
+                                'path' => $_path,
+                                'image' => $this->model_tool_image->resize($attach['path'], 100, 100,true),
+                                'download' => $this->url->download(array('token'=>$this->session->data['token'],'path'=>$attach['path'],'name'=>$attach['name']))
+                            );
+                        }
+                    }
+                    
+                }
+                $trackings[$key]['attach'] = $file;
+            }
+        }
+        $data['trackings'] = $trackings;
+
+        $this->response->setOutput($this->load->view('service/message.tpl', $data));
+    }
+    public function edit_ad_account(){
+        if(isset($this->request->post['advertise_id'])){
+            $this->load->model('service/publish');
+            $this->model_service_publish->edit_ad_account($this->request->post);
+            die(json_encode(array('msg'=>'保存成功')));
+        }
+    }
+}

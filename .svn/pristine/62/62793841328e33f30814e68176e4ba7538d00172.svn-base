@@ -1,0 +1,463 @@
+<?php
+
+class ControllerServiceAdvertiseTransfer extends Controller
+{
+    private $error = array();
+
+    public function index()
+    {
+        $this->load->language('service/advertise_transfer');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+        $this->document->addStyle(TPL_JS . 'bootstrap/ui/custom-theme/jquery-ui-1.10.3.custom.css');
+        $this->document->addScript(TPL_JS . 'bootstrap/ui/custom-theme/jquery-ui-1.10.3.custom.js');
+        $this->document->addStyle(TPL_JS . 'datetimepicker/bootstrap-datetimepicker.min.css');
+        $this->document->addScript(TPL_JS . 'datetimepicker/bootstrap-datetimepicker.min.js');
+        $this->document->addStyle(TPL_JS . 'fancybox/jquery.fancybox.css?v=2.1.5');
+        $this->document->addScript(TPL_JS . 'fancybox/jquery.fancybox.pack.js?v=2.1.5');
+        $this->document->addScript(TPL_JS . 'form.js');
+
+        $this->load->model('service/advertise_transfer');
+        $params = array(
+            'filter_ad_sn' => 'filter_ad_sn',
+            'filter_product' => 'filter_product',
+            'filter_target_url' => 'filter_target_url',
+            'filter_customer_id' => 'filter_customer_id',
+            'filter_in_charge' => 'filter_in_charge',
+            'filter_targeting' => 'filter_targeting',
+            'filter_post' => 'filter_post',
+            'filter_photo' => 'filter_photo',
+            'filter_publish' => 'filter_publish',
+            'filter_modified_start' => 'filter_modified_start',
+            'filter_modified_end' => 'filter_modified_end',
+            'filter_message' => 'filter_message',
+            'sort' => array('default' => 'a.date_modified'),
+            'order' => array('default' => 'DESC'),
+            'page' => array('default' => 1),
+            'token' => $this->session->data['token']
+        );
+        $url = $this->request->setUrl($params);
+
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link('service/advertise_transfer', $url, 'SSL')
+        );
+
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
+        } else {
+            $data['error_warning'] = '';
+        }
+
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+
+        if (isset($this->request->post['selected'])) {
+            $data['selected'] = (array)$this->request->post['selected'];
+        } else {
+            $data['selected'] = array();
+        }
+        $this->load->model('catalog/product');
+        $data['products'] = $this->model_catalog_product->getProducts();
+
+        $this->load->model('localisation/advertise_targeting');
+        $data['targeting_statuses'] = $this->model_localisation_advertise_targeting->getAdvertiseTargetings();
+
+        $this->load->model('localisation/advertise_post');
+        $data['post_statuses'] = $this->model_localisation_advertise_post->getAdvertisePosts();
+
+        $this->load->model('localisation/advertise_photo');
+        $data['photo_statuses'] = $this->model_localisation_advertise_photo->getAdvertisePhotos();
+
+        $this->load->model('localisation/advertise_publish');
+        $data['ad_publishes'] = $this->model_localisation_advertise_publish->getAdvertisePublishes();
+
+        $this->load->model('user/user');
+        $data['contributors'] = $this->model_user_user->getUsers(array('filter_status' => 1));
+
+        $this->load->model('customer/customer');
+        // Filter Records
+        $data['advertises'] = array();
+        $filter_data = $this->request->getFilter($params);
+        $data = array_merge($data, $filter_data);
+        $data['filter_customer'] = '';
+        if ($filter_data['filter_customer_id']) {
+            $customer = $this->model_customer_customer->getCustomer($filter_data['filter_customer_id']);
+            $data['filter_customer'] = empty($customer['username']) ? '' : $customer['username'] . ' ' . $customer['nickname'];
+        }
+        $filter_data['start'] = ($filter_data['page'] - 1) * $this->config->get('config_limit_admin');
+        $filter_data['limit'] = $this->config->get('config_limit_admin');
+
+        $results = $this->model_service_advertise_transfer->getAdvertises($filter_data);
+        foreach ($results as $result) {
+            $targeting = $this->_loadComponent($result['advertise_id'], 'targeting');
+            $post = $this->_loadComponent($result['advertise_id'], 'post');
+            $photo = $this->_loadComponent($result['advertise_id'], 'photo');
+            $in_charge = $this->model_user_user->getUser($result['in_charge']);
+            $customer = $this->model_customer_customer->getCustomer($result['customer_id']);
+            $product = $this->model_catalog_product->getProduct($result['product_id']);
+
+            $data['advertises'][] = array(
+                'advertise_id' => $result['advertise_id'],
+                'advertise_sn' => $result['advertise_sn'],
+                'product' => empty($product['name']) ? $this->language->get('text_unknown') : $product['code'].' '.$product['name'],
+                'customer' => empty($customer['username']) ? $this->language->get('text_unknown') : $customer['nickname'],
+                'charger' => empty($in_charge['username']) ? $this->language->get('text_unknown') : $in_charge['nickname'],
+                'targeting' => $targeting,
+                'post' => $post,
+                'photo' => $photo,
+                'date_modified' => date('Y-m-d H:i', strtotime($result['date_modified'])) ,
+            );
+        }
+        //Pagination
+        $pagination = new Pagination();
+        $pagination->total = $this->model_service_advertise_transfer->getTotalAdvertises($filter_data);
+        $pagination->page = $filter_data['page'];
+        $pagination->limit = $this->config->get('config_limit_admin');
+        $pagination->url = $this->url->link('service/advertise_transfer', $this->request->setPageURL($params) . '&page={page}', 'SSL');
+        $data['pagination'] = $pagination->render();
+        $data['results'] = $pagination->getResults($this->language->get('text_pagination'));
+
+        // Sort Order
+        $url = $this->request->setOrderUrl($params);
+        $data['sort_target_url'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.target_url', 'SSL');
+        $data['sort_ad'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.advertise_sn', 'SSL');
+        $data['sort_product'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.product_id', 'SSL');
+        $data['sort_customer'] = $this->url->link('service/advertise_transfer', $url . '&sort=customer', 'SSL');
+        $data['sort_publish'] = $this->url->link('service/advertise_transfer', $url . '&sort=publish', 'SSL');
+        $data['sort_in_charge'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.in_charge', 'SSL');
+        $data['sort_targeting'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.targeting_id', 'SSL');
+        $data['sort_post'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.post_id', 'SSL');
+        $data['sort_photo'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.photo_id', 'SSL');
+        $data['sort_date_added'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.date_added', 'SSL');
+        $data['sort_date_modified'] = $this->url->link('service/advertise_transfer', $url . '&sort=a.date_modified', 'SSL');
+
+        $this->language->setText($data, array(
+                'heading_title' => 'heading_title',
+                'text_list' => 'text_list',
+                'text_no_results' => 'text_no_results',
+                'text_confirm' => 'text_confirm',
+                'text_missing' => 'text_missing',
+                'text_confirm_bulk' => 'text_confirm_bulk',
+                'text_filter_toggle' => 'text_filter_toggle',
+                'column_ad_sn' => 'column_ad_sn',
+                'column_website' => 'column_website',
+                'column_product' => 'column_product',
+                'column_target_url' => 'column_target_url',
+                'column_customer' => 'column_customer',
+                'column_publish' => 'column_publish',
+                'column_in_charge' => 'column_in_charge',
+                'column_targeting' => 'column_targeting',
+                'column_post' => 'column_post',
+                'column_photo' => 'column_photo',
+                'column_date_added' => 'column_date_added',
+                'column_date_modified' => 'column_date_modified',
+                'entry_ad_sn' => 'entry_ad_sn',
+                'entry_product' => 'entry_product',
+                'entry_target_url' => 'entry_target_url',
+                'entry_customer' => 'entry_customer',
+                'entry_in_charge' => 'entry_in_charge',
+                'entry_targeting' => 'entry_targeting',
+                'entry_post' => 'entry_post',
+                'entry_photo' => 'entry_photo',
+                'entry_publish' => 'entry_publish',
+                'entry_note' => 'entry_note',
+                'entry_date_added' => 'entry_date_added',
+                'entry_date_modified' => 'entry_date_modified',
+                'entry_modified_start' => 'entry_modified_start',
+                'entry_modified_end' => 'entry_modified_end',
+                'button_add' => 'button_add',
+                'button_edit' => 'button_edit',
+                'button_delete' => 'button_delete',
+                'button_filter' => 'button_filter',
+                'button_view' => 'button_view',
+            )
+        );
+
+        $this->response->setOutput($this->load->view('service/advertise_transfer_list.tpl', $data, true));
+    }
+
+    private function _loadComponent($advertise_id, $mode = 'targeting')
+    {
+        $mode = strtolower(trim($mode));
+        $component = $this->model_service_advertise_transfer->getAdComponent($advertise_id, $mode);
+
+        $disabled = false;
+        if (isset($component['from'])) {
+            $data['status_text'] = $component['status_text'];
+            $data['status'] = $component['status'];
+            $data['locker'] = $component['locker'];
+            if(($component['from'] == 'backend' && !$component['user_id'])){
+                $data['status_text'] = $this->language->get('text_btn_untransfer');
+            }else if($component['status'] == $this->config->get('ad_' . $mode . '_review')
+                || in_array($component['status'], $this->config->get('ad_' . $mode . '_levels'))){
+                $disabled = true;
+            }
+        }else{
+            $data['status_text'] = $this->language->get('text_exception');
+            $data['status'] = 1;
+            $data['locker'] = 0;
+        }
+
+        $this->load->model('user/user');
+        $this->load->model('customer/customer');
+        $data['operator'] = '';
+        if ($component['from'] == 'backend' && !empty($component['user_id'])) {
+            $operator = $this->model_user_user->getUser($component['user_id']);
+            $data['operator'] = empty($operator['nickname']) ? '' : $operator['nickname'];
+        } else if ($component['from'] == 'member') {
+            $operator = $this->model_customer_customer->getUserNameCustomerId($component['customer_id']);
+            $data['operator'] = empty($operator['nickname']) ? $operator['username'] : $operator['nickname'];
+        }
+
+        $icon_class = 'fa-eye';
+        if($component['locker'] && $component['locker'] != $this->user->getId()){
+            $icon_class = 'fa-lock';
+        }elseif($disabled){
+            $icon_class = 'fa-exclamation-triangle';
+        }
+        $data['icon'] = '<i class="fa '.$icon_class.'"></i> ';
+        $data['btn_attr'] = $disabled ? 'disabled' : 'onClick="detail('.$advertise_id.',\''.$mode. '\')"' ;
+        $data['btn_class'] = $this->getComponentButtonClass($component['status'],$mode);
+        return $this->load->view('service/component_action.tpl', $data);
+    }
+
+    public function validate(){
+        if(!$this->user->isSupervisor() && !$this->user->isManager()){
+            $this->error['warning'] = $this->language->get('error_permission');
+        }
+
+        return !$this->error;
+    }
+    public function transfer()
+    {
+        $this->load->language('service/advertise_transfer');
+        $json = array();
+        if ($this->validate()) {
+            $this->load->model('service/advertise_transfer');
+            $mode = isset($this->request->post['mode']) ? strtolower(trim($this->request->post['mode'])) : 'targeting';
+            $entry_id = isset($this->request->post['entry_id']) ? (int)$this->request->post['entry_id'] : false;
+            if (isset($this->request->post['specify']) && !$this->request->post['specify']) {
+                $this->request->post['operator'] = 0;
+            }
+            if (!isset($this->request->post['operator'])) {
+                $json = array('status' => 0, 'msg' => $this->language->get('text_exception'));
+            }
+
+            $result = $this->model_service_advertise_transfer->componentTransfer($entry_id, $this->request->post, $mode);
+            if ($result == -1) {
+                $json['status'] = 0;
+                $json['msg'] = $this->language->get('text_locked');
+            } else if ($result) {
+                $json['status'] = 1;
+                $json['msg'] = $this->language->get('text_transfer_success');
+                $this->session->data['success'] = $this->language->get('text_transfer_success');
+                $this->model_service_advertise_transfer->lockAdComponent($entry_id, $mode, true, true);
+            }
+        } else {
+            $json = array('status' => 0, 'msg' => $this->language->get('error_permission'));
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function reset()
+    {
+        $this->load->model('service/advertise_transfer');
+        if ($this->validate()) {
+            $this->load->language('service/advertise_transfer');
+            $mode = isset($this->request->post['mode']) ? strtolower(trim($this->request->post['mode'])) : 'targeting';
+            $entry_id = isset($this->request->post['entry_id']) ? (int)$this->request->post['entry_id'] : false;
+            $json = array();
+            $result = $this->model_service_advertise_transfer->componentReset($entry_id, $this->request->post, $mode);
+            if ($result == -1) {
+                $json = array('status' => 0, 'msg' => $this->language->get('text_locked'));
+            } else if ($result) {
+                $json = array('status' => 1, 'msg' => $this->language->get('text_reset_success'));
+                $this->session->data['success'] = $this->language->get('text_reset_success');
+                $this->model_service_advertise_transfer->lockAdComponent($entry_id, $mode, true, true);
+            }
+        } else {
+            $json = array('status' => 0, 'msg' => $this->language->get('error_permission'));
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function relax()
+    {
+        $this->load->model('service/advertise_transfer');
+        if ($this->validate()) {
+            $this->load->language('service/advertise_transfer');
+            $mode = isset($this->request->post['mode']) ? strtolower(trim($this->request->post['mode'])) : 'targeting';
+            $entry_id = isset($this->request->post['entry_id']) ? (int)$this->request->post['entry_id'] : false;
+            $valid = isset($this->request->post['valid']) ? (int)$this->request->post['valid'] : false;
+            $reset = isset($this->request->post['reset']) ? (int)$this->request->post['reset'] : false;
+            $json = array();
+            $result = $this->model_service_advertise_transfer->lockAdComponent($entry_id, $mode, $valid, $reset);
+            if ($result) {
+                $json = array('status' => 1, 'msg' => $this->language->get('text_lock_success'));
+                if (!$valid) $this->session->data['success'] = $this->language->get('text_lock_success');
+            }
+        } else {
+            $json = array('status' => 0, 'msg' => $this->language->get('error_permission'));
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function component()
+    {
+        $this->load->language('service/advertise_transfer');
+
+        $this->load->model('service/advertise_transfer');
+        $mode = isset($this->request->post['mode']) ? strtolower(trim($this->request->post['mode'])) : 'targeting';
+        $advertise_id = isset($this->request->post['advertise_id']) ? (int)$this->request->post['advertise_id'] : false;
+        $ad_info = $this->model_service_advertise_transfer->getAdvertise($advertise_id, true);
+        if (!$ad_info) {
+            die($this->response->setOutput($this->load->view('service/component_error.tpl')));
+        }
+
+        $data = $this->model_service_advertise_transfer->getAdComponent($advertise_id, $mode);
+        $data['mode'] = $mode;
+        $data['entry_id'] = isset($data[$mode . '_id']) ? (int)$data[$mode . '_id'] : 0;
+        $data['heading_title'] = sprintf($this->language->get('text_title_transfer'), $this->language->get('tab_' . $mode),$ad_info['advertise_sn']);
+        $data['text_view'] = $this->language->get('text_unsubmit');
+
+        $this->load->model('user/user');
+        $operator = $this->model_user_user->getUser($data['user_id']);
+        $data['operator'] = empty($operator['username']) ? false : $operator['nickname'];
+        $locker = $this->model_user_user->getUser($data['locker']);
+        $keyer = empty($locker['username']) ? false : $locker['nickname'];
+
+        //lock
+        $data['locked'] = $data['relax'] = $data['transfer'] = $data['reset'] =  false;
+        if(!$data['website_status']){
+            $data['locked'] = true;
+            $data['transfer'] = false;
+            $data['text_lock'] = $this->language->get('text_website_status');
+        }else if(!empty($data['locker'])){
+            if($data['locker'] == $this->user->getId()){
+                $data['locked'] = false;
+                $data['transfer'] = $this->validate() && $data['from'] == 'backend' && !$data['user_id'] ;
+            }else{
+                $data['locked'] = true;
+                $data['transfer'] = false;
+                $data['relax'] = $this->validate();
+                $data['text_lock'] = sprintf($this->language->get('text_lock'), $keyer);
+            }
+
+        }else if($this->validate()){
+            $this->model_service_advertise_transfer->lockAdComponent($data['entry_id'], $mode);
+            $data['transfer'] = $data['from'] == 'backend' && !$data['user_id'];
+        }
+
+        //reset
+        $data['reset'] = $this->validate() && !$data['relax'] && !$data['transfer'] && !in_array($data['status'], $this->config->get('ad_'.$mode.'_levels'));
+        if($data['reset']){
+            $data['text_reset'] = $data['from']== 'member' ? $this->language->get('text_from_member') : sprintf($this->language->get('text_operator_by'),$data['operator']);
+        }
+
+        switch ($mode) {
+            case 'targeting':
+                $data['operators'] = $this->model_user_user->getAdOperators('targeting');
+                break;
+            case 'post':
+                $data['operators'] = $this->model_user_user->getAdOperators('post');
+                break;
+            case 'photo':
+                $data['operators'] = $this->model_user_user->getAdOperators('photo');
+                break;
+        }
+        $data['token'] = $this->session->data['token'];
+
+        $this->language->setText($data, array(
+            'entry_note' => 'entry_note',
+            'entry_operator' => 'entry_operator',
+            'button_close' => 'button_close',
+            'button_reset' => 'button_reset',
+            'button_relax' => 'button_relax',
+            'button_transfer' => 'button_transfer',
+            'text_none' => 'text_none',
+            'text_confirm_relax' => 'text_confirm_relax',
+            'text_confirm_reset' => 'text_confirm_reset',
+        ));
+
+        $this->response->setOutput($this->load->view('service/advertise_transfer_form.tpl', $data));
+    }
+
+    public function getComponentButtonClass($status,$mode = 'targeting'){
+        $btn_class = '';
+        switch ($mode) {
+            case 'targeting':
+                switch ($status) {
+                    case $this->config->get('ad_targeting_pending'):
+                        $btn_class = 'btn-warning';
+                        break;
+                    case $this->config->get('ad_targeting_transferred'):
+                        $btn_class = 'btn-info';
+                        break;
+                    case $this->config->get('ad_targeting_preview'):
+                        $btn_class = 'btn-primary';
+                        break;
+                    case $this->config->get('ad_targeting_rejected'):
+                        $btn_class = 'btn-danger';
+                        break;
+                    default :
+                        $btn_class = 'btn-success';
+                }
+                break;
+            case 'post':
+                switch ($status) {
+                    case $this->config->get('ad_post_pending'):
+                        $btn_class = 'btn-warning';
+                        break;
+                    case $this->config->get('ad_post_transferred'):
+                        $btn_class = 'btn-info';
+                        break;
+                    case  $this->config->get('ad_post_robot_review'):
+                    case  $this->config->get('ad_post_preview'):
+                        $btn_class = 'btn-primary';
+                        break;
+                    case $this->config->get('ad_post_rejected'):
+                        $btn_class = 'btn-danger';
+                        break;
+                    default :
+                        $btn_class = 'btn-success';
+                }
+                break;
+            case 'photo':
+                switch ($status) {
+                    case $this->config->get('ad_photo_pending'):
+                        $btn_class = 'btn-warning';
+                        break;
+                    case $this->config->get('ad_photo_transferred'):
+                        $btn_class = 'btn-info';
+                        break;
+                    case $this->config->get('ad_photo_review'):
+                        $btn_class = 'btn-primary';
+                        break;
+                    case $this->config->get('ad_photo_rejected'):
+                        $btn_class = 'btn-danger';
+                        break;
+                    default :
+                        $btn_class = 'btn-success';
+                }
+                break;
+        }
+
+        return $btn_class;
+    }
+}

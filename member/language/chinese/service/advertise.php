@@ -1,0 +1,145 @@
+<?php
+// Heading
+$_['heading_title']         = '广告管理';
+$_['title_tracking']        = '意见反馈:';
+//
+$_['tab_general']           = '广告信息';
+$_['tab_history']           = '历史记录';
+$_['tab_tracking']          = '信息';
+$_['tab_component_general'] = '常规';
+$_['tab_component_history'] = '历史';
+
+$_['button_save']           = '保存';
+$_['button_priority']       = '变更级别';
+$_['button_history_add']    = '保存';
+$_['button_return']         = '返回';
+// Text
+$_['text_account']          = '账户';
+$_['text_edit']             = '修改内容';
+$_['text_length_left']      = '个可输入字符';
+$_['text_input']            = '请输入';
+$_['text_ad']               = '广告';
+$_['text_ad_detail']        = '广告详情';
+$_['text_ad_status']        = '广告状态';
+$_['ad_publish_status']     = '广告发布状态: ';
+$_['text_target_url']       = '目标网址';
+$_['text_website']          = '网站首页';
+$_['text_publish']          = '发布状态';
+$_['text_publish_history']  = '发布状态记录';
+$_['text_balance_history']  = '费用变更记录';
+$_['text_priority']         = '级别';
+$_['text_product']          = '产品';
+$_['text_ad_id']            = '广告:';
+$_['text_date_added']       = '创建日期';
+$_['text_note']             = '备注';
+$_['text_targeting']        = '广告定位';
+$_['text_post']             = '广告词';
+$_['text_photo']            = '广告图片';
+$_['text_progress_targeting']= '定位进度';
+$_['text_progress_post']    = '广告词进度';
+$_['text_progress_photo']   = '图片进度';
+$_['text_amount']           = '费用：';
+$_['text_queuing']          = '当前排队人数：';
+$_['text_money']            = '金额：';
+$_['text_status']           = '状态';
+$_['text_queue']            = '排队中';
+$_['text_location']         = '国家';
+$_['text_language']         = '语言';
+$_['text_interest']         = '兴趣';
+$_['text_behavior']         = '行为';
+$_['text_more']             = '更多设置';
+$_['text_gender']           = '性别';
+$_['text_age']              = '年龄';
+$_['text_age_max']          = '最大年龄';
+$_['text_age_min']          = '最小年龄';
+$_['text_headline']         = '标题';
+$_['text_post_text']        = '广告词';
+$_['text_post_img']         = '图片';
+$_['text_post_img']         = '图片';
+$_['text_collapse']         = '显示/隐藏 更多定位设置';
+$_['text_from']             = '提供方';
+$_['text_member']           = '自己';
+$_['text_backend']          = '请帮我设计，设计完等我确认后再开户';
+$_['text_img_delete']       = '删除';
+$_['text_ad_confirm']       = '你正在确认该广告设计';
+$_['text_other_location']   = '更多国家';
+$_['text_other_language']   = '更多语言';
+$_['text_website_active']   = '网站正在推广';
+$_['text_website_stop']     = '网站停止推广';
+$_['text_update_priority']  = '获取最新队列信息';
+$_['text_error_balance']    = '您的余额不足,不能变更到此级别';
+$_['text_error_publish']    = '当前状态不是排队中，不能变更到此级别';
+$_['text_error_priority']   = '队列信息异常';
+$_['text_success_priority'] = '成功: 你已修改广告的队列信息 !';
+$_['text_confirm_change']   = '确认变更队列信息吗';
+$_['text_history']          = '历史记录';
+$_['text_success']          = '成功: 你已修改广告的发布状态 !';
+$_['text_empty']            = '你尚未创建任何广告!';
+$_['text_error']            = '无法搜索到该广告!';
+$_['text_save_success']     = '成功: 你已修改了广告信息!';
+$_['text_revoke_success']   = '成功: 你已撤销了降级申请!';
+$_['text_demotion']         = '降级须先提交申请，审核会在1-2个工作日完成!';
+$_['list_demotion']         = '降级申请中...';
+$_['detail_demotion']       = '降级申请审核中：<b>%s</b> 提交申请降为 <b>%s</b> &nbsp; &nbsp; &nbsp; <a id="revoke-apply" href="javascript:;">撤销降级申请</a>';
+$_['confirm_demotion']      = '降级须提交申请后审核，确认提交降级申请吗？';
+$_['confirm_revoke_apply']  = '确认撤销降级申请吗？';
+$_['success_demotion']      = '降级申请已提交！审核会在1-2个工作日完成，请耐心等待';
+$_['text_toggle_queue']     = '更改排队级别';
+$_['error_transfer']        = '警告: 必需先做好广告定位设置!';
+$_['error_confirm']         = "确认操作异常，请稍后重试";
+// Column
+$_['column_ad_id']          = '#';
+$_['column_ad_sn']          = '广告编号';
+$_['column_website']        = '网站首页';
+$_['column_target_url']     = '目标网址';
+$_['column_in_charge']      = '负责人';
+$_['column_product']        = '产品';
+$_['column_action']         = '动作';
+$_['column_date_added']     = '创建日期';
+$_['column_date_priority']  = '变更日期';
+$_['column_date_modified']  = '修改日期';
+$_['column_publish']        = '状态';
+$_['column_priority']       = '级别';
+$_['column_note']           = '备注';
+$_['column_type']           = '类型';
+$_['column_amount']         = '金额';
+$_['column_operator']       = '操作人';
+
+
+$_['progress_status']       = '进度';
+
+$_['entry_template']         = '定位模板:';
+$_['text_audience']         = '涉众';
+
+$_['entry_publish']         = '发布状态:';
+$_['entry_priority']        = '广告级别:';
+$_['entry_product']         = '产品:';
+$_['entry_website']         = '网站首页:';
+$_['entry_target_url']      = '目标网址:';
+$_['entry_modified_start']  = '起始创建日期';
+$_['entry_modified_end']    = '结束创建日期';
+
+$_['text_publish_queue']         = '您的广告正在 <b>%s</b> 队列中排队&nbsp; 排队号为 <b>%s</b>&nbsp; 请耐心等待';
+$_['text_publish_designing']     = '您的广告正在设计中, 我们将尽快完成它.';
+$_['text_publish_waiting']       = '我们已经完成广告各要素的设计，包括广告定位、广告图片、广告词。如果您觉得广告定位、广告图片、广告词等各要素设计没有问题的话，请按下面的确认键。';
+$_['text_publish_confirmed']     = '您已确认广告各要素的设计,我们将按这样的设计尽快在Facebook上发布该广告。';
+$_['text_publish_opening']       = '您的广告正在开户中，请耐心等待.';
+$_['text_publish_success']       = '您的广告已经在FB上开户成功。';
+$_['text_publish_deliveried']    = '您的广告已交货.';
+$_['text_publish_falied']        = '您的广告开户失败，请确认以下操作';
+$_['text_publish_deliveried']    = '您的广告已交货.';
+$_['text_publish_closed']        = '您的广告已关闭.';
+$_['ad_button_confirm']     = '确认';
+
+// Error
+$_['error_target_url']      = '目标网址是必填项目';
+$_['error_target_url_invalid']= '输入的网址不是一个有效的网址';
+$_['error_target_url_prefix']= '输入的网址与主站域名不符';
+$_['error_location']        = '国家是必填的';
+$_['error_gender']          = '性别是必填的';
+$_['error_language']        = '语言是必填的';
+$_['error_headline']        = '标题是必填的';
+$_['error_headline_length'] = '标题必需在3到25个字符之间';
+$_['error_text']            = '广告词内容是必填的';
+$_['error_text_length']     = '广告词长度必须在3-90字符之间';
+$_['error_photo']           = '必须上传图片';

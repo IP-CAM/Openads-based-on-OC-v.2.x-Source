@@ -1,0 +1,286 @@
+<?php  
+class ControllerSettingPermissionNode extends Controller {  
+    private $error = array();
+    public function index() {
+        $this->language->load('setting/permission_node');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+        $this->document->addStyle(TPL_JS."jstree/dist/themes/default/style.min.css");
+        $this->document->addScript(TPL_JS.'jstree/dist/jstree.min.js');  
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text'      => $this->language->get('text_home'),
+            'href'      => $this->url->link('common/home', 'token=' . $this->session->data['token'], 'SSL'),
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text'      => $this->language->get('heading_title'),
+            'href'      => $this->url->link('setting/permission_node', 'token=' . $this->session->data['token'] , 'SSL'),
+        );  
+
+        $data['heading_title'] = $this->language->get('heading_title');       
+        $data['text_no_results'] = $this->language->get('text_no_results');
+        $data['text_edit'] = $this->language->get('text_edit');
+        $data['text_wait'] = $this->language->get('text_wait');
+        $data['text_yes'] = $this->language->get('text_yes');
+        $data['text_no'] = $this->language->get('text_no');
+        $data['text_inside'] = $this->language->get('text_inside');
+        $data['text_before'] = $this->language->get('text_before');
+        $data['text_after'] = $this->language->get('text_after');
+        $data['text_root'] = $this->language->get('text_root');
+        $data['text_expand_collapse'] = $this->language->get('text_expand_collapse');
+        $data['text_create_root'] = $this->language->get('text_create_root');
+        $data['text_new_node'] = $this->language->get('text_new_node');
+        $data['text_sync'] = $this->language->get('text_sync');
+        $data['text_confirm_sync_all'] = $this->language->get('text_confirm_sync_all');
+        $data['text_confirm_sync'] = $this->language->get('text_confirm_sync');
+        $data['text_confirm_del'] = $this->language->get('text_confirm_del');
+        $data['text_confirm_move'] = $this->language->get('text_confirm_move');
+        $data['button_remove'] = $this->language->get('button_remove');
+        $data['button_create'] = $this->language->get('button_create');
+        $data['button_edit'] = $this->language->get('button_edit');
+        $data['button_sync'] = $this->language->get('button_sync');
+
+        $data['tab_menu'] = $this->language->get('tab_menu');
+        $data['tab_member'] = $this->language->get('tab_member');
+        $data['tab_action'] = $this->language->get('tab_action');
+
+        $data['entry_parent'] = $this->language->get('entry_parent');
+        $data['entry_key'] = $this->language->get('entry_key');
+        $data['entry_title'] = $this->language->get('entry_title');
+        $data['entry_path'] = $this->language->get('entry_path');
+        $data['entry_auth'] = $this->language->get('entry_auth');
+        $data['entry_sort'] = $this->language->get('entry_sort');
+        $data['entry_style'] = $this->language->get('entry_style');
+        $data['entry_status'] = $this->language->get('entry_status');
+
+        $data['button_save'] = $this->language->get('button_save');
+        $data['button_close'] = $this->language->get('button_close');
+        $data['button_cancel'] = $this->language->get('button_cancel');
+        $data['token'] = $this->session->data['token'];
+        if (isset($this->session->data['warning'])) {
+            $data['error_warning'] = $this->session->data['warning'];
+            unset($this->session->data['warning']);
+        } else {
+            $data['error_warning'] = '';
+        }
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+        $this->load->model('localisation/language');
+        $data['languages'] = $this->model_localisation_language->getLanguages();
+
+        $this->load->model('setting/permission_node');
+        if(!empty($this->request->get['permission'])){
+            $selected = array();
+            $mode = !empty($this->request->get['mode']) ? strtolower(trim($this->request->get['mode'])) : 'file';       
+            $nodes = $this->render_tree($this->model_setting_permission_node->getNodeTree(null,$mode),$selected,true);
+            $this->response->setOutput(json_encode($nodes));
+        }else{
+            $data['header'] = $this->load->controller('common/header');
+            $data['column_left'] = $this->load->controller('common/column_left');
+            $data['footer'] = $this->load->controller('common/footer');
+            $this->response->setOutput($this->load->view('setting/permission_node.tpl', $data));
+        }
+        
+    }
+
+    public function save() {
+        $this->language->load('setting/permission_node');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+    
+        $this->load->model('setting/permission_node');
+    
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm('setting/permission_node/save')) {
+            $res = $this->model_setting_permission_node->saveNode($this->request->post);
+            if($res){
+                $data = array('status'=>1,'msg'=>$this->language->get('text_success'));
+            }else{              
+                $data = array('status'=>0,'msg'=>$this->language->get('text_error'));
+            }
+            $this->response->setOutput(json_encode($data)); 
+        }
+    }
+
+    public function delete() { 
+        $this->language->load('setting/permission_node');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+    
+        $this->load->model('setting/permission_node');
+    
+        if (isset($this->request->post['node_id']) && $this->validateDelete('setting/permission_node/delete')) {
+            if($this->model_setting_permission_node->deleteNode($this->request->post['node_id'])){
+                $this->response->setOutput(json_encode(array('status'=>1,'msg'=>'Deleted!')));  
+            }
+        }   
+    }
+
+    private function render_tree($nodes,$selected=array(),$open=false){
+
+        if(is_array($nodes)){
+            $data = array();
+            foreach ($nodes as $key => $item) {
+                $tmp = array();
+                $tmp['text'] = $item['name'];
+                if($open){
+                    $tmp['state'] = array('opened'=>true);
+                }
+                
+                $tmp['title'] = $item['name'].' '.trim($item['note']);
+                $tmp['mode'] = $item['mode'];
+                $tmp['level'] = $item['level'];
+                $tmp['p_id'] = $item['p_id'];
+                $tmp['p_key'] = $item['p_key'];
+                $tmp['p_path'] = trim($item['p_path']);
+                $tmp['key'] = $item['key'];
+                $tmp['path'] = trim($item['path']);
+                $tmp['status'] = $item['status'];
+                $tmp['auth'] = $item['auth'];
+                $tmp['sort'] = $item['sort'];
+                $tmp['note'] = $item['note'];
+                $tmp['lang'] = $item['lang'];
+                if(isset($item['children']) && is_array($item['children'])){
+                    $tmp['icon'] = 'jstree-folder';
+                    $tmp['children'] = $this->render_tree($item['children'],$selected);
+                }else{
+                    $tmp['icon'] = "jstree-file";
+                    $tmp['children'] = false;
+                }
+                $tmp['id'] = $item['node_id'];
+                $data[] = $tmp;
+            }
+            return $data;
+        }
+        return false;
+    }
+    
+    protected function validateForm($route) {
+        if (!$this->user->hasPermission($route)) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        }
+        if(!empty($this->request->post['note_node'])){
+            if ((utf8_strlen($this->request->post['note']) < 3) || (utf8_strlen($this->request->post['note']) > 64)) {
+                $this->error['note'] = $this->language->get('error_note');
+            }
+        }else if(empty($this->request->post['drag'])){
+            if ((utf8_strlen($this->request->post['key']) < 3) || (utf8_strlen($this->request->post['key']) > 64)) {
+                $this->error['menu_key'] = $this->language->get('error_menu_key');
+            }
+        }
+        if (!$this->error) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    protected function validateDelete($route) { 
+        if (!$this->user->hasPermission($route)) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        } 
+        if (!isset($this->request->post['node_id'])) {
+            $this->error['warning'] = $this->language->get('text_error');
+        }
+        return !$this->error;
+    }
+
+    public function sync(){
+        $node_id = isset($this->request->post['node_id']) ? (int)$this->request->post['node_id'] : false;
+        $ignore = $this->user->getIgnoreRoutes();
+        $this->load->model('setting/permission_node');
+        $node_info = $this->model_setting_permission_node->getNode($node_id);
+        $file_tree = array();
+
+        if($node_id ){
+            if(empty($node_info['key'])){
+                die(json_encode(array('status'=>0,'msg'=>'Node Excption!')));
+            }
+            if(empty($node_info['path']) ){
+                $position = "/".strtolower(trim($node_info['key']))."/*";
+            }else{
+                $position = "/".strtolower(trim($node_info['path']));
+            }          
+        }else{
+            $position = "/*/*";
+        }
+        
+        $files = glob(DIR_APPLICATION . "controller".$position.".php");
+        
+        foreach ($files as $file) {
+            $data = explode('/', dirname($file));
+            $permission = end($data) . '/' . basename($file, '.php');
+            require_once $file;
+            list($_module_name,$_class_name) = explode('/',$permission);
+            $_className = 'Controller'.ucfirst($_module_name);
+            if($_class_name){
+                foreach(explode('_',$_class_name) as $_name){
+                    if(!empty($_name)){
+                        $_className .=ucfirst($_name);
+                    }
+                }
+            }
+            
+            $module=array();
+            $module['key'] = trim(strtolower($_module_name));
+            $m_node = $this->model_setting_permission_node->getFileNodeInfo(array('parent_id'=>0,'key'=>$module['key'],'level'=>1));
+            $module['title'] = ucfirst($_module_name);
+            $module['note'] = !empty($m_node['note']) ? $m_node['note'] : '';
+            $module['level'] = 1;
+            $module['insert'] = ($node_id && $node_id == $m_node['node_id']) ? 0 : 1 ;
+            $module['children'] = array();
+            $_class = new ReflectionClass(trim($_className));
+            $_methods = $_class->getMethods(ReflectionMethod::IS_PUBLIC);
+            if($_methods){
+                $controller = array();
+                $controller['path'] = trim($_module_name.'/'.trim($_class_name));
+                if(in_array($controller['path'], $ignore)){
+                    continue;
+                }
+                $controller['key'] = trim($module['key'].'_'.strtolower(trim($_class_name)));
+                $c_node = $this->model_setting_permission_node->getFileNodeInfo(array('level'=>2,'key'=>$controller['key'],'path'=>$controller['path']));
+                $controller['title'] = trim($_class_name);
+                $controller['note'] = !empty($c_node['note']) ? $c_node['note'] : '';
+                $controller['level'] = 2;
+                $controller['insert'] = ($node_id && isset($c_node['node_id']) && $node_id == $c_node['node_id']) ? 0 : 1 ;
+                if(!$controller['insert']){
+                    $module['insert'] = 0;
+                }
+                $controller['auth'] = 1;
+                foreach ($_methods as $item){                       
+                    if($item->class==$_className){
+                        $route = trim(rtrim($permission,'/').'/'.$item->name);
+                        $key = trim(str_ireplace("/", "_", substr($route, strpos($route,"/")+1)));
+                        $a_node = $this->model_setting_permission_node->getFileNodeInfo(array('level'=>3,'path'=>$route,'key'=>$key));
+                        $controller['children'][] = array(
+                            'level' => 3,
+                            'title' => $item->name,
+                            'path'=> $route,
+                            'auth'=> $controller['auth'] ? 1 :0,
+                            'key' => $key,
+                            'note'=> !empty($a_node['note']) ? $a_node['note'] : ''
+                        );
+                    }
+                }
+                $module['children'][] = $controller;
+            }
+            if(!isset($file_tree[$_module_name]['children'])){
+                $file_tree[$_module_name] = $module;
+            }else{
+                $file_tree[$_module_name]['children'] = array_merge($file_tree[$_module_name]['children'],$module['children']);
+            }
+        }
+    
+        sort($file_tree);
+        if($this->model_setting_permission_node->syncActionNodes($file_tree,$node_id)){
+            die(json_encode(array('status'=>1,'msg'=>'Sync Success!')));
+        }else{
+            die(json_encode(array('status'=>0,'msg'=>'Sync Excption!')));
+        }
+    }
+}

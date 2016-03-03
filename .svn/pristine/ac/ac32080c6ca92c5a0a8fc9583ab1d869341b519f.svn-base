@@ -1,0 +1,101 @@
+<?php
+class ModelUserUserModule extends Model {
+	public function addUserModule($data) {
+		$this->db->query("INSERT INTO " . DB_PREFIX . "user_module SET name = '" . $this->db->escape($data['name']) . "', `decription` = '".$this->db->escape($data['decription'])."' , permission = '" . (isset($data['permission']) ? $this->db->escape(serialize($data['permission'])) : '') . "'");
+	}
+
+	public function editUserModule($module_id, $data) {
+
+		$this->db->query("UPDATE " . DB_PREFIX . "user_module SET name = '" . $this->db->escape($data['name']) . "', `decription` = '".$this->db->escape($data['decription'])."' , permission = '" . (isset($data['permission']) ? $this->db->escape(serialize($data['permission'])) : '') . "' WHERE module_id = '" . (int)$module_id . "'");
+	}
+
+	public function deleteUserModule($module_id) {
+		$this->db->query("DELETE FROM " . DB_PREFIX . "user_module WHERE module_id = '" . (int)$module_id . "'");
+	}
+
+	public function getUserModule($module_id) {
+		$query = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "user_module WHERE module_id = '" . (int)$module_id . "'");
+
+		$user_module = array(
+			'name'       => $query->row['name'],
+			'decription'		 => $query->row['decription'],
+			'permission' => unserialize($query->row['permission'])
+		);
+
+		return $user_module;
+	}
+	public function getUsersByGroupID($module_id) {
+		$data = array();
+		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "user WHERE module_id = '" . (int)$module_id . "'");
+		if($query->num_rows){
+			foreach ($query->rows as $row) {
+				$data[] = array(
+					'user_id'   => $row['user_id'],
+					'name'      => $row['lastname'].$row['firstname'],
+					'username' 	=> $row['username'],
+					'author_id' => $row['author_id']
+				);
+			}
+		}	
+		
+		return $data;
+	}
+
+	public function getUserModules($data = array()) {
+		$sql = "SELECT * FROM " . DB_PREFIX . "user_module";
+
+		$sql .= " ORDER BY module_id";
+
+		if (isset($data['order']) && ($data['order'] == 'DESC')) {
+			$sql .= " DESC";
+		} else {
+			$sql .= " ASC";
+		}
+
+		if (isset($data['start']) || isset($data['limit'])) {
+			if ($data['start'] < 0) {
+				$data['start'] = 0;
+			}
+
+			if ($data['limit'] < 1) {
+				$data['limit'] = 20;
+			}
+
+			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+		}
+
+		$query = $this->db->query($sql);
+
+		return $query->rows;
+	}
+
+	public function getTotalUserModules() {
+		$query = $this->db->query("SELECT COUNT(*) AS total FROM " . DB_PREFIX . "user_module");
+
+		return $query->row['total'];
+	}
+
+	public function addPermission($module_id, $type, $route) {
+		$user_module_query = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "user_module WHERE module_id = '" . (int)$module_id . "'");
+
+		if ($user_module_query->num_rows) {
+			$data = unserialize($user_module_query->row['permission']);
+
+			$data[$type][] = $route;
+
+			$this->db->query("UPDATE " . DB_PREFIX . "user_module SET permission = '" . $this->db->escape(serialize($data)) . "' WHERE module_id = '" . (int)$module_id . "'");
+		}
+	}
+
+	public function removePermission($module_id, $type, $route) {
+		$user_module_query = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "user_module WHERE module_id = '" . (int)$module_id . "'");
+
+		if ($user_module_query->num_rows) {
+			$data = unserialize($user_module_query->row['permission']);
+
+			$data[$type] = array_diff($data[$type], array($route));
+
+			$this->db->query("UPDATE " . DB_PREFIX . "user_module SET permission = '" . $this->db->escape(serialize($data)) . "' WHERE module_id = '" . (int)$module_id . "'");
+		}
+	}
+}

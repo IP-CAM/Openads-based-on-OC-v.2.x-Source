@@ -1,0 +1,294 @@
+<?php
+class ControllerSettingMap extends Controller {
+    private $error = array();
+    public function index() {
+        $this->language->load('setting/map');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+        $this->document->addStyle(TPL_JS."jstree/dist/themes/default/style.min.css");
+        $this->document->addScript(TPL_JS.'jstree/dist/jstree.min.js');
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text'      => $this->language->get('text_home'),
+            'href'      => $this->url->link('common/home', 'token=' . $this->session->data['token'], 'SSL'),
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text'      => $this->language->get('heading_title'),
+            'href'      => $this->url->link('setting/map', 'token=' . $this->session->data['token'] , 'SSL'),
+        );
+
+        $data['heading_title'] = $this->language->get('heading_title');
+        $data['text_no_results'] = $this->language->get('text_no_results');
+        $data['text_edit'] = $this->language->get('text_edit');
+        $data['text_wait'] = $this->language->get('text_wait');
+        $data['text_yes'] = $this->language->get('text_yes');
+        $data['text_no'] = $this->language->get('text_no');
+        $data['text_inside'] = $this->language->get('text_inside');
+        $data['text_before'] = $this->language->get('text_before');
+        $data['text_after'] = $this->language->get('text_after');
+        $data['text_root'] = $this->language->get('text_root');
+        $data['text_expand_collapse'] = $this->language->get('text_expand_collapse');
+        $data['text_create_root'] = $this->language->get('text_create_root');
+        $data['text_new_node'] = $this->language->get('text_new_node');
+        $data['text_sync'] = $this->language->get('text_sync');
+        $data['text_confirm_sync_all'] = $this->language->get('text_confirm_sync_all');
+        $data['text_confirm_sync'] = $this->language->get('text_confirm_sync');
+        $data['text_confirm_del'] = $this->language->get('text_confirm_del');
+        $data['text_confirm_move'] = $this->language->get('text_confirm_move');
+        $data['button_remove'] = $this->language->get('button_remove');
+        $data['button_create'] = $this->language->get('button_create');
+        $data['button_edit'] = $this->language->get('button_edit');
+        $data['button_sync'] = $this->language->get('button_sync');
+
+        $data['entry_path'] = $this->language->get('entry_path');
+        $data['entry_catalog'] = $this->language->get('entry_catalog');
+        $data['entry_function'] = $this->language->get('entry_function');
+        $data['entry_title'] = $this->language->get('entry_title');
+        $data['entry_class'] = $this->language->get('entry_class');
+        $data['entry_ignore'] = $this->language->get('entry_ignore');
+        $data['entry_sort'] = $this->language->get('entry_sort');
+        $data['entry_log'] = $this->language->get('entry_log');
+        $data['entry_status'] = $this->language->get('entry_status');
+
+        $data['button_save'] = $this->language->get('button_save');
+        $data['button_close'] = $this->language->get('button_close');
+        $data['button_cancel'] = $this->language->get('button_cancel');
+        $data['token'] = $this->session->data['token'];
+        if (isset($this->session->data['warning'])) {
+            $data['error_warning'] = $this->session->data['warning'];
+            unset($this->session->data['warning']);
+        } else {
+            $data['error_warning'] = '';
+        }
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+        $this->load->model('localisation/language');
+        $data['languages'] = $this->model_localisation_language->getLanguages();
+
+        $this->load->model('setting/map');
+        if(!empty($this->request->get['permission'])){
+            $selected = array();
+
+            $nodes = $this->render_tree($this->model_setting_map->getNodeTree(null),$selected,true);
+            $this->response->setOutput(json_encode($nodes));
+        }else{
+            $data['header'] = $this->load->controller('common/header');
+            $data['column_left'] = $this->load->controller('common/column_left');
+            $data['footer'] = $this->load->controller('common/footer');
+            $this->response->setOutput($this->load->view('setting/map.tpl', $data));
+        }
+
+    }
+    private function render_tree($nodes,$selected=array(),$open=false){
+
+        if(is_array($nodes)){
+            $data = array();
+            foreach ($nodes as $key => $item) {
+                $tmp = array();
+                $tmp['text'] = trim($item['name']);
+                $languages = json_decode($item['note'],true);
+                if (is_array($languages) && !empty($languages[$this->config->get('config_language')])) {
+                    $tmp['text'] .= " ".$languages[$this->config->get('config_language')];
+                }
+
+                if($open){
+                    $tmp['state'] = array('opened'=>true);
+                }
+                if(isset($item['children']) && is_array($item['children'])){
+                    $tmp['icon'] = 'jstree-folder';
+                    $tmp['children'] = $this->render_tree($item['children'],$selected);
+                }else{
+                    $tmp['icon'] = "jstree-file";
+                    $tmp['children'] = false;
+                }
+                $title = array($item['catalog']);
+                if(!empty($item['class'])){
+                    $title[] = $item['class'];
+                }
+                if(!empty($item['function'])) {
+                    $title[] = $item['function'];
+                }
+                $tmp['li_attr'] = array(
+                    'note'     => $item['note'],
+                    'node_id'   => $item['node_id'],
+                    'parent'    => $item['p_id'],
+                    'function'  => $item['function'],
+                    'class'     => $item['class'],
+                    'catalog'   => $item['catalog'],
+                    'status'    => $item['status'],
+                    'ignore'    => $item['ignore'],
+                    'sort'      => $item['sort'],
+                    'lang'      => $item['lang'],
+                    'title'     => implode(" / ",$title)
+                );
+                if(!$item['p_id']){
+                    $tmp['li_attr']['super'] = "/";
+                }elseif(!isset($item['children'])){
+                    $tmp['li_attr']['super'] = implode(" -> ",array($item['class'],$item['catalog']));
+                }else{
+                    $tmp['li_attr']['super'] = $item['catalog'];
+                }
+
+                $tmp['id'] = $item['node_id'];
+                $data[] = (array)$tmp;
+            }
+            return $data;
+        }
+        return false;
+    }
+    public function save() {
+        $this->language->load('setting/map');
+
+        $this->load->model('setting/map');
+
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm('setting/map/save')) {
+            $res = $this->model_setting_map->saveNode($this->request->post);
+            if($res){
+                $data = array('status'=>1,'msg'=>$this->language->get('text_success'));
+            }else{
+                $data = array('status'=>0,'msg'=>$this->language->get('text_error'));
+            }
+
+        }else{
+            $data = array('status'=>0,'msg'=>implode(",",$this->error));
+        }
+
+        $this->response->setOutput(json_encode($data));
+    }
+
+    public function delete() {
+        $this->language->load('setting/map');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+
+        $this->load->model('setting/map');
+
+        if (isset($this->request->post['node_id']) && $this->validateDelete('setting/map/delete')) {
+            if($this->model_setting_map->deleteNode($this->request->post['node_id'])){
+                $this->response->setOutput(json_encode(array('status'=>1,'msg'=>'Deleted!')));
+            }
+        }
+    }
+
+    public function sync(){
+        $node_id = isset($this->request->post['node_id']) ? (int)$this->request->post['node_id'] : false;
+        $ignore = $this->user->getIgnoreRoutes();
+        $this->load->model('setting/map');
+        $this->language->load('setting/map');
+
+        if($node_id ){
+            $node_info = $this->model_setting_map->getNode(array('node_id'=>$node_id));
+            if(empty($node_info['class']) ){
+                $position = "/".strtolower(trim($node_info['catalog']))."/*";
+            }else{
+                $position = "/".strtolower(trim($node_info['catalog']))."/".strtolower(trim($node_info['class']));
+            }
+        }else{
+            $position = "/*/*";
+        }
+
+        $files = glob(DIR_APPLICATION . "controller".$position.".php");
+        $file_tree = array();
+        foreach ($files as $file) {
+            $data = explode('/', dirname($file));
+            $permission = end($data) . '/' . basename($file, '.php');
+            require_once $file;
+            list($_module_name,$_class_name) = explode('/',$permission);
+            $_className = 'Controller'.ucfirst($_module_name);
+            if($_class_name){
+                foreach(explode('_',$_class_name) as $_name){
+                    if(!empty($_name)){
+                        $_className .=ucfirst($_name);
+                    }
+                }
+            }
+
+            $module=array();
+            $m_node = $this->model_setting_map->getNode(array('parent_id'=>0,'catalog'=>trim($_module_name)));
+            $module['level'] = 1;
+            $module['catalog'] = trim($_module_name);
+            $module['note'] = empty($m_node['note']) ? '' : $m_node['note'] ;
+            $module['ignore'] = empty($m_node['ignore']) ? 0 : $m_node['ignore'] ;
+            $module['insert'] = ($node_id && $node_id == $m_node['node_id']) ? 0 : 1 ;
+            $module['children'] = array();
+            $_class = new ReflectionClass(trim($_className));
+            $_methods = $_class->getMethods(ReflectionMethod::IS_PUBLIC);
+            if($_methods){
+                $path = trim($_module_name.'/'.trim($_class_name));
+                if(in_array($path, $ignore)){
+                    continue;
+                }
+                $c_node = $this->model_setting_map->getNode(array('catalog'=>trim($_module_name),'class'=>trim($_className),'function'=>''));
+                $controller = array();
+                $controller['catalog'] = trim($_module_name);
+                $controller['class'] = trim($_class_name);
+                $controller['level'] = 2;
+                $controller['insert'] = ($node_id && isset($c_node['node_id']) && $node_id == $c_node['node_id']) ? 0 : 1 ;
+                if(!$controller['insert']){
+                    $module['insert'] = 0;
+                }
+                $controller['note'] = empty($c_node['note']) ? '' : $c_node['note'] ;
+                $controller['ignore'] = empty($c_node['ignore']) ? 0 : $c_node['ignore'] ;
+                foreach ($_methods as $item){
+                    if($item->class==$_className){
+                        $a_node = $this->model_setting_map->getNode(array('catalog'=>trim($_module_name),'class'=>trim($_class_name),'function'=>$item->name));
+                        $function = array();
+                        $function['level'] = 3;
+                        $function['function'] = $item->name;
+                        $function['class'] = trim($_class_name);
+                        $function['catalog'] =  trim($_module_name);
+                        $function['note'] = empty($a_node['note']) ? '' : $a_node['note'];
+                        $function['ignore'] = empty($a_node['ignore']) ? 0 : $a_node['ignore'] ;
+                        $controller['children'][] = $function;
+                    }
+                }
+                $module['children'][] = $controller;
+            }
+            if(!isset($file_tree[$_module_name]['children'])){
+                $file_tree[$_module_name] = $module;
+            }else{
+                $file_tree[$_module_name]['children'] = array_merge($file_tree[$_module_name]['children'],$module['children']);
+            }
+        }
+
+        if($this->model_setting_map->syncActionNodes($file_tree,$node_id)){
+            die(json_encode(array('status'=>1,'msg'=>$this->language->get('text_sync_success'))));
+        }else{
+            die(json_encode(array('status'=>0,'msg'=>$this->language->get('text_sync_failed'))));
+        }
+    }
+
+    protected function validateForm($route) {
+        if (!$this->user->hasPermission($route)) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        }
+
+        if(empty($this->request->post['drag'])){
+            if(empty($this->request->post['catalog'])){
+                $this->error['catalog'] = $this->language->get('error_catalog');
+            }
+        }
+
+        if (!$this->error) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    protected function validateDelete($route) {
+        if (!$this->user->hasPermission($route)) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        }
+        if (!isset($this->request->post['node_id'])) {
+            $this->error['warning'] = $this->language->get('text_error');
+        }
+        return !$this->error;
+    }
+}

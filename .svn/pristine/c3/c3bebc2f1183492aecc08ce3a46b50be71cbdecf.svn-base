@@ -1,0 +1,103 @@
+<?php
+class ModelUserRole extends Model {
+	public function addRole($data) {
+		
+
+	    $fields = array(
+			'role_name' 		=> $data['role_name'],
+			'decription'		=> $data['decription'],
+			'modules'		=> (isset($data['module_ids']) && is_array($data['module_ids']) ? implode(",", $data['module_ids']) : ''),
+			'added_date'	=> date('Y-m-d H:i:s')
+		);
+		$this->db->insert("user_role",$fields);
+	}
+
+	public function editRole($role_id, $data) {
+		
+		$fields = array(
+			'role_name' 		=> $data['role_name'],
+			'decription'		=> $data['decription'],
+			'modules'		=> (isset($data['module_ids']) && is_array($data['module_ids']) ? implode(",", $data['module_ids']) : ''),
+			'modified_date'	=> date('Y-m-d H:i:s')
+		);
+	
+		$this->db->update("user_role",array('role_id' =>(int)$role_id),$fields);
+	
+	}
+
+	public function getRoleInfo($role_id){
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user_role` WHERE role_id = '" . (int)$role_id . "'");
+		return $query->row;
+	}
+	public function deleteRole($role_id) {
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "user_role` WHERE role_id = '" . (int)$role_id . "'");
+	}
+
+	public function getModule($module_id) {
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user_module` WHERE module_id = '" . (int)$module_id . "'");
+
+		return $query->row;
+	}
+	public function getModules() {
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user_module` WHERE 1 ");
+
+		return $query->rows;
+	}
+	public function getModulesByRoleId($role_id){
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "user_role` WHERE role_id = '" . (int)$role_id . "'");
+        return $query->rows;
+	}
+	public function getRoles($data = array()) {
+		$sql = "SELECT * FROM `" . DB_PREFIX . "user_role` ";
+
+		$sort_data = array(
+			'role_name',
+			'added_date',
+			'user_id'
+		);
+
+		if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+			$sql .= " ORDER BY " . $data['sort'];
+		} else {
+			$sql .= " ORDER BY user_id";
+		}
+
+		if (isset($data['order']) && ($data['order'] == 'DESC')) {
+			$sql .= " DESC";
+		} else {
+			$sql .= " ASC";
+		}
+
+		if (isset($data['start']) || isset($data['limit'])) {
+			if ($data['start'] < 0) {
+				$data['start'] = 0;
+			}
+
+			if ($data['limit'] < 1) {
+				$data['limit'] = 20;
+			}
+
+			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+		}
+
+		$query = $this->db->query($sql);
+
+		return $query->rows;
+	}
+
+	public function getTotalRoles() {
+		$query = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "user_role`");
+
+		return $query->row['total'];
+	}
+
+	public function isRoleIdInUsed($role_id){
+		$sql="SELECT user_id FROM ".DB_PREFIX."user WHERE FIND_IN_SET(".$role_id.",roles)";
+		
+		$query = $this->db->query($sql);
+		if($query->num_rows){
+			return true;
+		}
+		return false;
+	}
+}

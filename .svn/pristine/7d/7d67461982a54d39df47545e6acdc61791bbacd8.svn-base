@@ -1,0 +1,23 @@
+<?php
+// Heading
+$_['heading_title']           = '国家';
+
+// Text
+$_['text_success']            = '成功: 国家已修改!';
+$_['text_list']               = '国家列表';
+$_['text_add']                = '添加国家';
+$_['text_edit']               = '编辑国家';
+
+// Column
+$_['column_name']             = '国家名称';
+$_['column_action']           = '动作';
+
+// Entry
+$_['entry_name']              = '国家名称';
+$_['entry_status']            = '状态';
+
+
+// Error
+$_['error_permission']        = '警告: 你没有权限修改国家!';
+$_['error_name']              = '国家名称必须在3-128个字符之间!';
+$_['error_default']           = '警告: 该国家不能删除，国为它与默认商店的相关国家相关联!';

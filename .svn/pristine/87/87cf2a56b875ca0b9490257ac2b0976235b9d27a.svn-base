@@ -1,0 +1,374 @@
+<?php
+class ControllerServiceAdvertisePhoto extends Controller {
+	private $error = array();
+	private $params = array(
+		'filter_advertise_sn' =>'filter_advertise_sn',
+		'filter_customer_id' => 'filter_customer_id',
+		'filter_status' =>'filter_status',
+		'filter_artist' =>'filter_artist',
+		'filter_modified_start' =>'filter_modified_start',
+		'filter_modified_end' =>'filter_modified_end',
+		'sort' => array('default'=>'ap.date_modified'),
+		'order' => array('default'=>'DESC'),
+		'page' => array('default'=>1)
+	);
+	public function index() {
+		$this->load->language('service/advertise_photo');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->document->addScript(TPL_JS.'jquery.ajaxupload.js');
+		$this->document->addScript(TPL_JS.'jquery.json.min.js');
+		$this->document->addStyle(TPL_JS.'fancybox/jquery.fancybox.css?v=2.1.5');
+		$this->document->addScript(TPL_JS.'fancybox/jquery.fancybox.pack.js?v=2.1.5');
+		$this->document->addStyle(TPL_JS.'formvalidation/dist/css/formValidation.css');
+		$this->document->addScript(TPL_JS.'formvalidation/dist/js/formValidation.js');
+		$this->document->addScript(TPL_JS.'formvalidation/dist/js/framework/bootstrap.min.js');
+		$this->load->model('service/advertise_photo');
+
+		$this->params['token'] = $this->session->data['token'];
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] , 'SSL')
+		);
+
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->session->data['success'])) {
+			$data['success'] = $this->session->data['success'];
+
+			unset($this->session->data['success']);
+		} else {
+			$data['success'] = '';
+		}
+
+		if (isset($this->request->post['selected'])) {
+			$data['selected'] = (array)$this->request->post['selected'];
+		} else {
+			$data['selected'] = array();
+		}
+		$this->load->model('localisation/advertise_photo');
+		$data['photo_statuses'] = $this->model_localisation_advertise_photo->getAdvertisePhotos();
+
+		$this->load->model('user/user');
+		$data['contributors'] = $this->model_user_user->getAdOperators('photo');
+
+		// Filter Data
+		$filter_data = $this->request->getFilter($this->params);
+		$data = array_merge($data,$filter_data);
+		$filter_data['start'] = ($filter_data['page'] - 1) * $this->config->get('config_limit_admin');
+		$filter_data['limit'] = $this->config->get('config_limit_admin');
+
+		$this->load->model('customer/customer');
+		$data['filter_customer'] = '';
+		if($data['filter_customer_id']){
+			$customer = $this->model_customer_customer->getCustomer($data['filter_customer_id']);
+			$data['filter_customer'] = empty($customer['username']) ? '' : $customer['username'].' '.$customer['nickname'];
+		}
+
+		$data['photos'] = array();
+		$total = $this->model_service_advertise_photo->getTotalAdvertisePhotos($filter_data);
+
+		$results = $this->model_service_advertise_photo->getAdvertisePhotos($filter_data);
+		$this->load->model('tool/image');
+		$this->load->model('catalog/product');
+		foreach ($results as $result) {
+			$file = array();
+			$file['image'] = $this->model_tool_image->resize('no_image.png');
+			$file['name'] = 'no_image.png';
+			if(!empty($result['file'])){
+				$files = json_decode($result['file'],true);
+				if(is_array($files)){
+					$attch = current($files);
+					if ($attch['path'] && file_exists($attch['path'])) {
+		                $file['realpath'] = HTTP_CATALOG.substr($attch['path'],strpos($attch['path'],'/')+1);
+		                $file['name'] = $attch['name'];
+		                $file['image'] = $this->model_tool_image->resize($attch['path'], 100, 100,true);
+		            }
+				}
+			}
+			$customer = $this->model_customer_customer->getCustomer($result['customer_id']);
+			$product = $this->model_catalog_product->getProduct($result['product_id']);
+			$in_charger = $this->model_user_user->getUser($result['in_charge']);
+			$operator = $this->model_user_user->getUser($result['user_id']);
+			$status = $this->model_localisation_advertise_photo->getAdvertisePhoto($result['status']);
+
+			$data['photos'][] = array(
+				'photo_id'  	=> $result['photo_id'],
+				'advertise_id'  => $result['advertise_id'],
+				'advertise_sn'  => $result['advertise_sn'],
+				'file'      	=> $file,
+				'status'        => $result['status'],
+				'status_text'   => $status['status_id'] ? sprintf(getBSTagStyle($status['status_id'],'status'),$status['name']) : $this->language->get('text_exception_red'),
+				'product'       => empty($product['name']) ? $this->language->get('text_unknown') : $product['name'] ,
+				'customer'      => empty($customer['username']) ? $this->language->get('text_unknown') : $customer['nickname'],
+				'charger'       => empty($in_charger['username']) ? $this->language->get('text_unknown') : $in_charger['nickname'],
+				'artist'      	=> empty($operator['username']) ? $this->language->get('text_unknown') : $operator['nickname'],
+				'from'        	=> $result['from']=='member' ? $this->language->get('entry_from_member') : $this->language->get('entry_from_backend'),
+				'date_modified' => date('Y-m-d', strtotime($result['date_modified'])).'<br>'.date('H:i:s', strtotime($result['date_modified'])),
+			);
+		}
+		//Pagination
+		$pagination = new Pagination();
+		$pagination->total = $total;
+		$pagination->page = $filter_data['page'];
+		$pagination->limit = $filter_data['limit'];
+		$pagination->url = $this->url->link('service/advertise_photo', $this->request->setPageUrl($this->params) . '&page={page}', 'SSL');
+		$data['pagination'] = $pagination->render();
+		$data['results'] = $pagination->getResults($this->language->get('text_pagination'));
+
+		//Sort Order
+		$url = $this->request->setOrderUrl($this->params);
+		$data['sort_customer'] = $this->url->link('service/advertise_photo', $url . '&sort=customer', 'SSL');
+		$data['sort_artist'] = $this->url->link('service/advertise_photo', $url . '&sort=ap.user_id', 'SSL');
+		$data['sort_status'] = $this->url->link('service/advertise_photo', $url . '&sort=ap.status', 'SSL');
+		$data['sort_date_modified'] = $this->url->link('service/advertise_photo', $url . '&sort=ap.date_modified', 'SSL');
+
+		//Page Text
+		$this->language->setText($data, array(
+			'heading_title' => 'heading_title',
+			'text_list' => 'text_list',
+			'text_edit' => 'text_edit',
+			'text_no_results' => 'text_no_results',
+			'text_confirm' => 'text_confirm',
+			'column_ad_sn' => 'column_ad_sn',
+			'column_file' => 'column_file',
+			'column_status' => 'column_status',
+			'column_in_charge' => 'column_in_charge',
+			'column_date_modified' => 'column_date_modified',
+
+			'entry_advertise_sn' => 'entry_advertise_sn',
+			'entry_customer' => 'entry_customer',
+			'entry_status' => 'entry_status',
+			'entry_product' => 'entry_product',
+			'entry_artist' => 'entry_artist',
+			'entry_target_url' => 'entry_target_url',
+			'entry_modified_start' => 'entry_modified_start',
+			'entry_modified_end' => 'entry_modified_end',
+			'button_filter' => 'button_filter',
+			'button_view' => 'button_view',
+		));
+		$this->response->setOutput($this->load->view('service/advertise_photo_list.tpl', $data,true));
+	}
+
+	public function detail() {
+		$this->load->language('service/advertise_photo');
+		$data['token'] = $this->session->data['token'];
+		$data['action'] = $this->url->link('service/advertise_photo/edit', 'photo_id='.$this->request->get['photo_id'].'&token=' . $this->session->data['token'] , 'SSL');
+
+		$this->load->model('tool/image');
+
+		$this->load->model('localisation/targeting');
+		$data['locations'] = $this->model_localisation_targeting->getTargetingsByCategory('location');
+		$data['genders'] = $this->model_localisation_targeting->getTargetingsByCategory('gender');
+		$data['languages'] = $this->model_localisation_targeting->getTargetingsByCategory('language');
+
+		$this->load->model('localisation/advertise_photo');
+		$data['photo_statuses'] = $this->model_localisation_advertise_photo->getAdvertisePhotos();
+
+		$this->load->model('service/advertise_photo');
+        $photo = $this->model_service_advertise_photo->getAdvertisePhoto($this->request->get['photo_id']);
+		$data['photo_id'] = $photo['photo_id'];
+		$data['advertise_id'] = $photo['advertise_id'];
+		$data['target_url'] = $photo['target_url'];
+		$data['website_status'] = $photo['website_status'];
+
+		$data['file'] = false;
+		if(!empty($photo['file'])){
+			$files = json_decode($photo['file'],true);
+			if(is_array($files)){
+				$file = array();
+				foreach ($files as $item) {
+					if (file_exists($item['path'])){
+					$file[] = array(
+						'realpath' => HTTP_CATALOG.substr($item['path'],strpos($item['path'],'/')+1),
+						'name' => $item['name'],
+						'path' => $item['path'],
+						'image'	=> $this->model_tool_image->resize($item['path'], 100, 100,true)
+					);
+					}
+				}
+				$data['file'] = $file;
+			}
+		}
+		$data['ad_note'] = isset($photo['ad_note']) ? $photo['ad_note'] : '';
+		$data['note'] = isset($photo['note']) ? $photo['note'] : '';
+
+		$status = $this->model_localisation_advertise_photo->getAdvertisePhoto($photo['status']);
+		$data['status_text'] = empty($status['status_id']) ? $this->language->get('text_exception_red') : sprintf(getBSTagStyle($status['status_id'],'status'),$status['name']);
+
+		$this->load->model('user/user');
+		$keyer = $this->model_user_user->getUser($photo['locker']);
+
+		//Lock Modify
+        $data['locked'] = $data['relax'] = $data['modify'] = false;
+		if(!$photo['website_status']){
+			$data['locked'] = true;
+			$data['modify'] = false;
+			$data['text_lock'] = $this->language->get('text_website_status');
+		}else if(!empty($photo['locker'])){
+            if($photo['locker'] == $this->user->getId()){
+                $data['locked'] = false;
+				$data['modify'] = !in_array($photo['status'], $this->config->get('ad_photo_levels'));
+            }else{
+                $data['locked'] = true;
+				$data['modify'] = false;
+                $data['text_lock'] = sprintf($this->language->get('text_lock'),$keyer['nickname']);
+				$data['relax'] = $this->validate();
+            }           
+        }else if($photo['user_id'] == $this->user->getId()){
+			$this->load->model('service/advertise');
+            $this->model_service_advertise->lockAdComponent((int)$photo['photo_id'] ,'photo');
+			$data['modify'] = !in_array($photo['status'], $this->config->get('ad_photo_levels'));
+        }
+
+		//Targeting
+        $targeting = $this->model_service_advertise_photo->getAdvertiseTargeting($data['advertise_id']);
+
+		$data['location'] = isset($targeting['location']) ? explode(",", $targeting['location']) : array();
+		$data['language'] = isset($targeting['language']) ? explode(",", $targeting['language']) : array();
+		$data['other_location'] = isset($targeting['other_location']) ? $targeting['other_location'] : '';
+		$data['other_language'] = isset($targeting['other_language']) ? $targeting['other_language'] : '';
+		$data['gender'] = isset($targeting['gender']) ? $targeting['gender'] : '';
+		$data['age_min'] = isset($targeting['age_min']) ? $targeting['age_min'] : '';
+		$data['age_max'] = isset($targeting['age_max']) ? $targeting['age_max'] : '';
+		$data['interest'] = isset($targeting['interest']) ? $targeting['interest'] : '';
+		$data['audience'] = isset($targeting['audience']) ? $targeting['audience'] : '';
+		$data['targeting_status'] = sprintf(getBSTagStyle($targeting['status'],'status'),$targeting['name']);
+
+		//Post
+        $post = $this->model_service_advertise_photo->getAdvertisePost($data['advertise_id']);
+		$data['headline'] = isset($post['headline']) ? html_entity_decode($post['headline']) : '';
+		$data['post_text'] = isset($post['text']) ? html_entity_decode($post['text']) : '';
+		$data['post_note'] = isset($post['note']) ? $post['note'] : '';
+		$data['post_status'] = sprintf(getBSTagStyle($post['status'],'status'),$post['name']);
+
+		//Page Text
+		$this->language->setText($data,array(
+			'button_save' => 'button_save',
+			'button_cancel' => 'button_cancel',
+			'button_upload' => 'button_upload',
+			'button_relax' => 'button_relax',
+
+			'entry_file' => 'entry_file',
+			'entry_note' => 'entry_note',
+			'error_photo' => 'error_photo',
+
+			'entry_target_url' => 'entry_target_url',
+			'entry_location' => 'entry_location',
+			'entry_other_location' => 'entry_other_location',
+			'entry_language' => 'entry_language',
+			'entry_other_language' => 'entry_other_language',
+			'entry_gender' => 'entry_gender',
+			'entry_age' => 'entry_age',
+			'entry_interest' => 'entry_interest',
+			'entry_audience' => 'entry_audience',
+
+			'entry_headline' => 'entry_headline',
+			'entry_post_text' => 'entry_post_text',
+			'entry_post_note' => 'entry_post_note',
+
+			'tab_photo' => 'tab_photo',
+			'tab_history' => 'tab_history',
+			'text_empty' => 'text_empty',
+			'text_img_delete' => 'text_img_delete',
+			'text_targeting' => 'text_targeting',
+			'text_photo' => 'text_photo',
+			'text_post' => 'text_post',
+		));
+		$this->response->setOutput($this->load->view('service/advertise_photo_form.tpl', $data));
+	}
+
+	public function edit() {
+		$this->load->language('service/advertise_photo');
+
+		$this->load->model('service/advertise_photo');
+		$json = array('status'=>0,'msg'=>$this->language->get('text_exception'));
+		if (($this->request->server['REQUEST_METHOD'] == 'POST')) {
+			$result = $this->model_service_advertise_photo->editAdvertisePhoto($this->request->post['photo_id'],$this->request->post);
+			if($result == -1){
+				$json['status'] = 0;
+				$json['msg']    = $this->language->get('text_locked');
+			}else  if($result == -2){
+				$json['status'] = 0;
+				$json['msg']    = $this->language->get('text_no_post');
+			}else{
+				$this->session->data['success'] = $this->language->get('text_success');
+				$json = array('status'=>1,'msg'=>$this->language->get('text_success'));
+			}
+		}
+		$this->response->setOutput(json_encode($json));
+	}
+	protected function validate() {
+		if (!$this->user->isSuperVisor() && !$this->user->isManager()) {
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		return !$this->error;
+	}
+
+	public function history() {
+		$this->load->language('service/advertise_photo');
+		$this->load->model('service/advertise_photo');
+
+		$data['text_no_results'] = $this->language->get('text_no_results');
+
+		$data['column_date_added'] = $this->language->get('column_date_added');
+		$data['column_status'] = $this->language->get('column_status');
+		$data['column_operator'] = $this->language->get('column_operator');
+		$data['column_note'] = $this->language->get('column_note');
+
+		if (isset($this->request->get['page'])) {
+			$page = $this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$data['histories'] = array();
+
+		$this->load->model('service/advertise_photo');
+
+		$results = $this->model_service_advertise_photo->getAdvertisePhotoHistories($this->request->get['photo_id'], ($page - 1) * 10, 10);
+
+		foreach ($results as $result) {
+			$operator = $this->language->get('text_artist');
+			if($result['customer_id']){
+				$operator = $this->language->get('text_customer');
+			}else if($result['in_charge']){
+				$operator = $this->language->get('text_in_charge');
+			}
+
+			if($result['user_id']){
+				$operator .= '<br>[<i>'.$result['artist'].'</i>]';
+			}
+			$data['histories'][] = array(
+				'operator' 	=> $operator,
+				'status'   	=> $result['status'],
+				'note'    	=> nl2br($result['note']),
+				'date_added'=> date('Y-m-d', strtotime($result['date_added'])).'<br>'. date('H:i:s', strtotime($result['date_added']))
+			);
+		}
+
+		$pagination = new Pagination();
+		$pagination->total = $this->model_service_advertise_photo->getTotalAdvertisePhotoHistories($this->request->get['photo_id']);
+		$pagination->page = $page;
+		$pagination->limit = 10;
+		$pagination->url = $this->url->link('service/advertise_photo/history', 'token=' . $this->session->data['token'] . '&photo_id=' . $this->request->get['photo_id'] . '&page={page}', 'SSL');
+		$data['pagination'] = $pagination->render();
+		$data['results'] = $pagination->getResults($this->language->get('text_pagination'));
+
+		$this->response->setOutput($this->load->view('service/advertise_photo_history.tpl', $data));
+	
+	}
+}

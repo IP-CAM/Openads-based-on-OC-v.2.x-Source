@@ -1,0 +1,571 @@
+<?php
+function lively_truncate($string, $length = 80, $etc = '...', $count_words = true) {
+	mb_internal_encoding ( "UTF-8" );
+	$string = strip_tags(trim(html_entity_decode($string)));
+	if ($length == 0) return '';
+	preg_match_all ( "/[\x01-\x7f]|[\xc2-\xdf][\x80-\xbf]|\xe0[\xa0-\xbf][\x80-\xbf]|[\xe1-\xef][\x80-\xbf][\x80-\xbf]|\xf0[\x90-\xbf][\x80-\xbf][\x80-\xbf]|[\xf1-\xf7][\x80-\xbf][\x80-\xbf][\x80-\xbf]/", $string, $info );
+	if ($count_words) {
+		$k = 0;
+		$wordscut = '';
+		for($i = 0; $i < count ( $info [0] ); $i ++) {
+			$wordscut .= $info [0] [$i];
+			$k ++;
+			if ($k >= $length) {
+				return $wordscut . $etc;
+			}
+		}
+		return join ( '', $info [0] );
+	}
+	return join ( "", array_slice ( $info [0], 0, $length ) ) . $etc;
+}
+/*
+ operation E:Encrypt D:Decrypt
+
+ */
+function JEncrypt($string,$operation='E'){
+	$key = md5('JingJian');
+	$key_length = strlen($key);
+	$string = $operation == 'D' ? base64_decode($string) : substr(md5($string.$key),0,8).$string;
+	$string_length = strlen($string);
+	$rndkey = $box = array();
+	$result = '';
+	for($i = 0;$i <= 255;$i++){
+		$rndkey[$i] = ord($key[$i%$key_length]);
+		$box[$i] = $i;
+	}
+	for($j = $i = 0;$i < 256;$i++){
+		$j = ($j+$box[$i]+$rndkey[$i])%256;
+		$tmp = $box[$i];
+		$box[$i] = $box[$j];
+		$box[$j] = $tmp;
+	}
+	for($a = $j = $i = 0;$i<$string_length;$i++){
+		$a = ($a+1)%256;
+		$j = ($j+$box[$a])%256;
+		$tmp = $box[$a];
+		$box[$a] = $box[$j];
+		$box[$j] = $tmp;
+		$result .= chr(ord($string[$i])^($box[($box[$a]+$box[$j])%256]));
+	}
+	if($operation == 'D'){
+		if(substr($result,0,8) == substr(md5(substr($result,8).$key),0,8)){
+			return substr($result,8);
+		}else{
+			return'';
+		}
+	}else{
+		return str_replace('=','',base64_encode($result));
+	}
+}
+
+function dayList($begin,$end){
+	$data = array();
+	$begin = strtotime($begin);
+	$end = strtotime($end);
+	for($i=$begin; $i<=$end;$i+=(24*3600)){
+		$data[] =  date("Y-m-d",$i) ;
+	}
+	return $data;
+}
+
+function get_image_url($fileName){
+	$imgurl = '';
+	$ext = substr($fileName,strrpos($fileName,'.') + 1);
+	if(in_array($ext,array('jpg','jpeg','gif','png'))){
+		$imgurl = $fileName;
+	}else{
+		if(defined("HTTP_CATALOG")){
+			$prefix  =  HTTP_CATALOG;
+		}else{
+			$prefix  =  HTTP_SERVER;
+		}
+		$imgurl = $prefix."asset/image/icons/$ext.png";
+	}
+	return $imgurl;
+}
+
+function postCountryDir($country_id,$suffix='WithPhoto'){
+    $countryStr = false;
+    switch((int)$country_id){
+        case 1:
+            $countryStr="1_USA".($suffix ? "_".$suffix : '');
+            break;
+        case 3:
+            $countryStr="3_France".($suffix ? "_".$suffix : '');
+            break;
+        default:
+            $countryStr="1_USA".($suffix ? "_".$suffix : '');
+    }
+    return $countryStr;
+}
+function zeroFull($value,$length = 2){
+	$zeroFull = array();
+	for($i=strlen((int)$value);$i<$length;$i++){
+		$zeroFull[]='0';
+	}
+	$zeroFull[] = (int)$value;
+	return implode('', $zeroFull);
+}
+
+function _is_curl_installed() {
+	if  (in_array('curl', get_loaded_extensions())) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+function deldir($dir) {
+	//先删除目录下的文件：
+	$dh=opendir($dir);
+	while ($file=readdir($dh)) {
+		if($file!="." && $file!="..") {
+			$fullpath=$dir."/".$file;
+			if(!is_dir($fullpath)) {
+				unlink($fullpath);
+			} else {
+				deldir($fullpath);
+			}
+		}
+	}
+	closedir($dh);
+	//删除当前文件夹：
+	if(rmdir($dir)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+function getBSTagStyle($value,$mode='progress'){
+	$mode = strtolower($mode);
+	$style = '';
+	switch ($mode) {
+		case 'publish':
+			switch ((int)$value) {
+				case 1:
+					$style = '<label class="label label-default">%s</label>';
+					break;
+				case 2:
+				case 3:
+					$style = '<label class="label label-primary">%s</label>';
+					break;
+				case 4:
+					$style = '<label class="label label-success">%s</label>';
+					break;
+				case 5:
+					$style = '<label class="label label-info">%s</label>';
+					break;
+				case 6:
+					$style = '<label class="label label-warning">%s</label>';
+					break;
+				default:
+					$style = '<label class="label label-default">%s</label>';
+					break;
+			}
+			break;
+		case 'progress':
+			switch ((int)$value) {
+				case 1:
+					$style = '<span class="label label-info">%s</span>';
+					break;
+				case 2:
+					$style = '<span class="label label-warning">%s</span>';
+					break;
+				case 3:
+					$style = '<span class="label label-primary">%s</span>';
+					break;
+				case 4:
+					$style = '<span class="label label-success">%s</span>';
+					break;
+				default:
+					$style = '<span class="label label-default">%s</span>';
+			}
+			break;
+		case 'status':
+			switch ((int)$value) {
+				case 1:
+					$style = '<span class="label label-default">%s</span>';
+					break;
+				case 2:
+					$style = '<span class="label label-warning">%s</span>';
+					break;
+				case 3:
+					$style = '<span class="label label-primary">%s</span>';
+					break;
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+					$style = '<span class="label label-success">%s</span>';
+					break;
+				case 8:
+					$style = '<span class="label label-danger">%s</span>';
+					break;
+				default:
+					$style = '<span class="label label-default">%s</span>';
+			}
+			break;
+	}
+	return $style;
+}
+
+/**
+ * *
+ * @param string $value
+ * @param string $match
+ * @return boolean
+ */
+function isURL($url,$match='/^(http:\/\/)?(https:\/\/)?([\w\d-]+\.)+[\w-]+(\/[\d\w-.\+\/?%&=#]*)?$/i'){
+	if(empty($url)){
+		return false;
+	}
+	$url = strtolower(trim($url));
+	return preg_match($match, $url);
+	return false;
+
+}
+
+
+/**
+ * @param string $value
+ * @param int $length
+ * @return boolean
+ */
+function isEmail($value,$match='/^[\w\d]+[\w\d-.]*@[\w\d-.]+\.[\w\d]{2,10}$/i'){
+	$v = trim($value);
+	if(empty($v))
+	return false;
+
+	return preg_match($match,$v);
+
+}
+
+/**
+ * @param string $value
+ * @return boolean
+ */
+function isTelephone($value,$match='/^0[0-9]{2,3}[-]?\d{7,8}$/'){
+	$v = trim($value);
+	if(empty($v))
+	return false;
+	return preg_match($match,$v);
+}
+function GetLevelTypeName($type,$language){
+	if($language=="cn"){
+		switch ($type){
+			case $type==1:
+				$typeName="充值";
+				break;
+			case $type==2:
+				$typeName="消费";
+				break;
+			case $type==3:
+				$typeName="退款";
+				break;
+			case $type==4:
+				$typeName="提现";
+				break;
+            default:
+            	$typeName="新建";
+            	//新建type是6
+		}
+	}else{
+		switch ($type){
+			case $type==1:
+				$typeName="Add";
+				break;
+			case $type==2:
+				$typeName="Spend";
+				break;
+			case $type==3:
+				$typeName="Refund";
+				break;
+			case $type==4:
+				$typeName="Withdrawal";
+				break;
+            default:
+            	$typeName="New Ad";
+		}
+	}
+    return $typeName;
+}
+function getOfficeGroupName($group_id){
+		switch ($group_id){
+			case $group_id==1:
+				$typeName="管理员";
+				break;
+			case $group_id==2:
+				$typeName="管工";
+				break;
+			case $group_id==3:
+				$typeName="员工";
+				break;
+			case $group_id==4:
+				$typeName="兼职";
+				break;
+            default:
+            	$typeName="兼职";
+		}
+		return $typeName;
+}
+function getWeekTime($date=''){
+
+    $timestamp = empty($date) ? time() : (is_numeric($date) ? $date : strtotime($date) );
+    $w = strftime('%w',$timestamp);
+    $y = date('Y',$timestamp);
+    return getWeekDate($w,$y);
+}
+
+ function getWeekDate($week,$year=null){
+ 	if(!$year){
+ 		$year = date('Y');
+ 	}
+    $timestamp = mktime(0,0,0,1,1,$year);
+    $dayofweek = date("w",$timestamp);
+    if( $week != 1){
+        $distance = ($week-1)*7-$dayofweek+1;
+    }
+        
+    $passed_seconds = $distance * 86400;
+    $timestamp += $passed_seconds;  
+    $firt_date_of_week = date("Y-m-d",$timestamp);
+    if($week == 1){
+        $distance = 7-$dayofweek;
+    }else{
+    	$distance = 6;
+    }        
+    $timestamp += $distance * 86400;
+    $last_date_of_week = date("Y-m-d",$timestamp);
+    return array('begin'=>$firt_date_of_week,'end'=>$last_date_of_week);
+ }
+
+function getWeekDayText($value){
+	$text = '';
+	switch ((int)$value) {
+		case 1:
+			$text = '星期一';
+			break;
+		case 2:
+			$text = '星期二';
+			break;
+		case 3:
+			$text = '星期三';
+			break;
+		case 4:
+			$text = '星期四';
+			break;
+		case 5:
+			$text = '星期五';
+			break;
+		case 6:
+			$text = '星期六';
+			break;
+		case 0:
+			$text = '星期日';
+			break;
+	}
+	return $text;
+}
+function getContributeAmount($type,$status){
+  	$amount=0;
+  	//type=1,是有图片的account post
+  	if((int)$type==1){
+    		switch ((int)$status){
+      			case 4://1
+        				$amount=3;
+        				break;
+      			case 5://2
+        				$amount=5;
+        				break;
+      			case 6://3
+        				$amount=10;
+        				break;
+      			case 7://4
+        				$amount=20;
+        				break;		
+    		}		
+  	}
+    //type=2,是无图片的account post
+  	if((int)$type==2){
+    		switch ((int)$status){
+      			case 2://1
+        				$amount=3;
+        				break;
+      			case 3://2
+        				$amount=5;
+        				break;
+      			case 4://3
+        				$amount=10;
+        				break;
+      			case 5://4
+        				$amount=20;
+        				break;		
+    		}
+  	}
+    //type=3,是无图片的page post
+  	if((int)$type==3){
+    		switch ((int)$status){
+      			case 2://1
+        				$amount=3;
+        				break;
+      			case 3://2
+        				$amount=5;
+        				break;
+      			case 4://3
+        				$amount=10;
+        				break;
+      			case 5://4
+        				$amount=20;
+        				break;		
+    		}
+  	}
+    //type=4,是有图片的page post
+  	if((int)$type==4){
+    		switch ((int)$status){
+      			case 4://1
+        				$amount=5;
+        				break;
+      			case 5://2
+        				$amount=10;
+        				break;
+      			case 6://3
+        				$amount=15;
+        				break;
+      			case 7://4
+        				$amount=20;
+        				break;		
+    		}
+  	}
+    //type=5,是message
+    if((int)$type==5){
+        switch ((int)$status){
+            case 2://1
+                $amount=6;
+                break;
+            case 3://2
+                $amount=10;
+                break;
+            case 4://3
+                $amount=15;
+                break;
+            case 5://4
+                $amount=25;
+                break;    
+        }
+    }
+  	
+
+        //type=8,是nfl post
+    if((int)$type==8){
+        switch ((int)$status){
+            case 4://1
+                $amount=5;
+                break;
+            case 5://2
+                $amount=10;
+                break;
+            case 6://3
+                $amount=15;
+                break;
+            case 7://4
+                $amount=20;
+                break;    
+        }
+    }
+
+    return $amount;
+}
+
+function readExcel( $filePath) {
+	require_once DIR_SYSTEM.'library/PHPExcel/IOFactory.php';
+  	$PHPReader = new PHPExcel_Reader_Excel5();
+  	if(!$PHPReader->canRead($filePath)){   
+    	$PHPReader = new PHPExcel_Reader_Excel5();   
+      	if(!$PHPReader->canRead($filePath)){         
+        	echo 'no Excel';  
+          	return ;   
+      	}  
+  	}
+  	$PHPExcel = $PHPReader->load($filePath);  
+  	$currentSheet = $PHPExcel->getSheet(0);  /**取得一共有多少列*/
+  	$allColumn = $currentSheet->getHighestColumn();     /**取得一共有多少行*/  
+  	$allRow = $currentSheet->getHighestRow();
+  	$all = array();
+  	for( $currentRow = 1 ; $currentRow <= $allRow ; $currentRow++){
+    	$flag = 0;
+      	$col = array();
+      	for($currentColumn='A'; $currentColumn <= $allColumn ; $currentColumn++){
+        	$address = $currentColumn.$currentRow;   
+          	$string = $currentSheet->getCell($address)->getValue();
+          	$col[$flag] = $string;
+          	$flag++;
+      	}
+      	$all[] = $col;
+  	}
+  	return $all;
+}
+
+function writeExcel($filepath,$data = array()){
+  	if(!$filepath){
+    	return false;
+  	}
+  	if(is_array($data) ){
+  		require_once DIR_SYSTEM.'library/PHPExcel.php';
+  		require_once DIR_SYSTEM.'library/PHPExcel/Style.php';
+  		require_once DIR_SYSTEM.'library/PHPExcel/Style/Alignment.php';
+  		require_once DIR_SYSTEM.'library/PHPExcel/Style/Color.php';
+  		require_once DIR_SYSTEM.'library/PHPExcel/Style/Font.php';
+	    $objExcel = new PHPExcel(); 
+	    $objExcel
+	    ->getProperties()          
+	    //获得文件属性对象，给下文提供设置资源
+	    ->setCreator( isset($data['setting']['creator']) ? $data['setting']['creator'] : "Jason")
+	    //置文件的创建者
+	    ->setLastModifiedBy( isset($data['setting']['modified']) ? $data['setting']['modified'] :"Jason")   //设置最后修改者
+	    ->setTitle( isset($data['setting']['title']) ? $data['setting']['title'] :"Test Document" )   
+	    //设置标题
+	    ->setSubject( isset($data['setting']['subject']) ? $data['setting']['subject'] :"Test Document" );
+	    //设置类别
+	    $objExcel->setActiveSheetIndex(0);//设置第一个内置表（一个xls文件里可以有多个表）为活动的
+	    $objActSheet = $objExcel->getActiveSheet();
+	    $objActSheet->setTitle('Sheet1');
+	    if(isset($data['headline'])){
+	      	foreach ($data['headline'] as $offset => $title ){
+	        	$objActSheet->setCellValue($offset,$title);
+	        	$objActSheet->getStyle($offset)->applyFromArray(
+	        		array(
+	        			'font' => array(
+	        				'bold' => true,
+	        				'size' => 12,
+	        				'color' => array(
+	        					'rgb' => '000000'
+	        				)
+	        			),
+	        			'alignment' => array(
+	        				'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER
+	        			)
+	        		)
+	        	);
+	      	}
+	    }
+	    if(isset($data['items'])){
+	      	foreach ($data['items'] as $item ){
+	        	foreach ($item as $cellkey => $row){
+	          		$objExcel->getActiveSheet()->setCellValue($cellkey,$row['text']);
+		      		if(isset($row['style']) && is_array($row['style'])){
+		      			$objActSheet->getStyle($cellkey)->applyFromArray($row['style']);
+		      		}		          		
+	        	}
+		        
+	      	}
+	      	
+	      	foreach ($data['headline'] as $offset => $title ){
+	      		$objExcel->getActiveSheet()->getColumnDimension(strtoupper(substr($offset, 0,1)))->setAutoSize(true);
+	      	}
+	    }
+  	}
+    //生成文件
+    PHPExcel_IOFactory::createWriter($objExcel, 'Excel5')->save($filepath); 
+    return $filepath;
+}

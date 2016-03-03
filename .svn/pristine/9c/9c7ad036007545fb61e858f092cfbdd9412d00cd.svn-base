@@ -1,0 +1,338 @@
+<?php
+class ControllerServiceAdvertiseTargeting extends Controller {
+    private $error = array();
+
+    private $params = array(
+            'filter_advertise_sn' => 'filter_advertise_sn',
+            'filter_customer_id' => 'filter_customer_id',
+            'filter_target_url' => 'filter_target_url',
+            'filter_status' => 'filter_status',
+            'filter_from' => 'filter_from',
+            'filter_in_charge' => 'filter_in_charge',
+            'filter_operator' => 'filter_operator',
+            'filter_modified_start' => 'filter_modified_start',
+            'filter_modified_end' => 'filter_modified_end',
+            'sort' => array('default'=>'at.date_modified'),
+            'order' => array('default'=>'DESC'),
+            'page' => array('default'=>1)
+    );
+
+    public function index() {
+        $this->load->language('service/advertise_targeting');
+
+        $this->document->setTitle($this->language->get('heading_title'));
+
+        $this->document->addStyle(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.css');
+        $this->document->addScript(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.js');
+        $this->document->addStyle(TPL_JS.'formvalidation/dist/css/formValidation.css');
+        $this->document->addScript(TPL_JS.'formvalidation/dist/js/formValidation.js');
+        $this->document->addScript(TPL_JS.'formvalidation/dist/js/framework/bootstrap.min.js');
+        $this->load->model('service/advertise_targeting');
+
+        $this->params['token'] = $this->session->data['token'];
+        $data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link('service/advertise_targeting', 'token=' . $this->session->data['token'] , 'SSL')
+        );
+
+        $data['list'] = $this->url->link('service/advertise_targeting', 'token=' . $this->session->data['token'] , 'SSL');
+
+        if(isset($this->session->data['selected'])){
+            $data['selected'] = $this->session->data['selected'];
+            unset($this->session->data['selected']);
+        }else{
+            $data['selected'] = false;
+        }
+
+        $this->load->model('localisation/advertise_targeting');
+        $data['statuses'] = $this->model_localisation_advertise_targeting->getAdvertiseTargetings();
+
+        $this->load->model('user/user');
+        $data['managers'] = $this->model_user_user->getAdOperators('manager');
+
+        // Filter Data
+        $filter_data = $this->request->getFilter($this->params);
+        $data = array_merge($data,$filter_data);
+        $filter_data['start'] = ($filter_data['page'] - 1) * $this->config->get('config_limit_admin');
+        $filter_data['limit'] = $this->config->get('config_limit_admin');
+
+        $this->load->model('customer/customer');
+        $data['filter_customer'] = '';
+        if($data['filter_customer_id']){
+            $customer = $this->model_customer_customer->getCustomer($data['filter_customer_id']);
+            $data['filter_customer'] = empty($customer['username']) ? '' : $customer['username'].' '.$customer['nickname'];
+        }
+
+        $results = $this->model_service_advertise_targeting->getAdvertiseTargetings($filter_data);
+        $data['posts'] = array();
+
+        foreach ($results as $result) {
+            $customer = $this->model_customer_customer->getCustomer($result['customer_id']);
+            $in_charger = $this->model_user_user->getUser($result['in_charge']);
+            $operator = $this->model_user_user->getUser($result['user_id']);
+
+            $data['posts'][] = array(
+                'targeting_id'  => $result['targeting_id'],
+                'advertise_sn'  => $result['advertise_sn'],
+                'advertise_id'  => $result['advertise_id'],
+                'status_text'   => $this->adstyle->getTargetingStatusText($result['status']),
+                'product'       => $this->adstyle->getProductText($result['product_id']),
+                'customer'      => empty($customer['username']) ? $this->language->get('text_unknown') : $customer['nickname'],
+                'charger'       => empty($in_charger['username']) ? $this->language->get('text_unknown') : $in_charger['nickname'],
+                'operator'      => empty($operator['username']) ? $this->language->get('text_unknown') : $operator['nickname'],
+                'date_modified' => date('Y-m-d', strtotime($result['date_modified'])).'<br>'.date('H:i:s', strtotime($result['date_modified'])),
+            );
+            if($data['selected']===false){
+                $data['selected'] = $result['targeting_id'];
+            }
+        }
+        //Pagination
+        $pagination = new Pagination();
+        $pagination->total = $this->model_service_advertise_targeting->getTotalAdvertiseTargetings($filter_data);
+        $pagination->page = $filter_data['page'];
+        $pagination->limit = $filter_data['limit'];
+        $pagination->url = $this->url->link('service/advertise_targeting', $this->request->setPageUrl($this->params). '&page={page}', 'SSL');
+        $data['pagination'] = $pagination->render();
+        $data['results'] = $pagination->getResults($this->language->get('text_pagination'));
+
+        //Sort Order
+        $url = $this->request->setOrderUrl($this->params);
+        $data['sort_advertise_sn'] = $this->url->link('service/advertise_targeting', $url . '&sort=ap.advertise_sn', 'SSL');
+        $data['sort_operator'] = $this->url->link('service/advertise_targeting', $url . '&sort=ap.user_id', 'SSL');
+        $data['sort_product'] = $this->url->link('service/advertise_targeting', $url . '&sort=ap.product_id', 'SSL');
+        $data['sort_status'] = $this->url->link('service/advertise_targeting', $url . '&sort=ap.status', 'SSL');
+        $data['sort_date_modified'] = $this->url->link('service/advertise_targeting', $url . '&sort=ap.date_modified', 'SSL');
+
+        //Page Text
+        $this->language->setText($data,array(
+            'heading_title' => 'heading_title',
+            'text_list' => 'text_list',
+            'text_edit' => 'text_edit',
+            'text_no_results' => 'text_no_results',
+            'text_confirm' => 'text_confirm',
+            'text_filter_title' => 'text_filter_title',
+            'tab_history' => 'tab_history',
+            'tab_advertise' => 'tab_advertise',
+            'tab_targeting' => 'tab_targeting',
+            'column_ad_sn' => 'column_ad_sn',
+            'column_status' => 'column_status',
+            'column_date_modified' => 'column_date_modified',
+            'column_product' => 'column_product',
+            'column_in_charge' => 'column_in_charge',
+
+            'entry_advertise_sn' => 'entry_advertise_sn',
+            'entry_product' => 'entry_product',
+            'entry_status' => 'entry_status',
+            'entry_in_charge' => 'entry_in_charge',
+            'entry_modified_start' => 'entry_modified_start',
+            'entry_modified_end' => 'entry_modified_end',
+            'entry_operator' => 'entry_operator',
+            'button_filter' => 'button_filter',
+            'button_reset' => 'button_reset',
+        ));
+
+        $this->response->setOutput($this->load->view('service/advertise_targeting_list.tpl', $data,true));
+    }
+
+    public function edit() {
+        $this->load->language('service/advertise_targeting');
+
+        $this->load->model('service/advertise_targeting');
+        $json = array('status'=>0,'msg'=>$this->language->get('text_exception'));
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') ) {
+            $result = $this->model_service_advertise_targeting->editAdvertiseTargeting($this->request->post['targeting_id'],$this->request->post);
+            if($result === false){
+                $json = array('status'=>0,'msg'=>$this->language->get('text_permission'));
+            }else if($result == -1){
+                $json = array('status'=>0,'msg'=>$this->language->get('text_locked'));
+            }else {
+                $json = array('status'=>1,'msg'=>$this->language->get('text_success'));
+                $this->session->data['success'] = $this->language->get('text_success');
+                $this->session->data['selected'] = $this->request->post['targeting_id'];
+            }
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function detail() {
+        $this->load->language('service/advertise_targeting');
+
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
+        } else {
+            $data['error_warning'] = '';
+        }
+
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+
+        $data['token'] = $this->session->data['token'];
+        $data['action'] = $this->url->link('service/advertise_targeting/edit', 'targeting_id='.$this->request->get['targeting_id'].'&token=' . $this->session->data['token'] , 'SSL');
+
+        $this->load->model('localisation/targeting');
+        $data['locations'] = $this->model_localisation_targeting->getTargetingsByCategory('location');
+        $data['genders'] = $this->model_localisation_targeting->getTargetingsByCategory('gender');
+        $data['languages'] = $this->model_localisation_targeting->getTargetingsByCategory('language');
+
+        $this->load->model('localisation/advertise_targeting');
+        $data['targeting_statuses'] = $this->model_localisation_advertise_targeting->getAdvertiseTargetings();
+
+        $this->load->model('service/advertise_targeting');
+        $targeting = $this->model_service_advertise_targeting->getAdvertiseTargeting($this->request->get['targeting_id']);
+        $data['targeting_id'] = $targeting['targeting_id'];
+        $data['advertise_id'] = $targeting['advertise_id'];
+        $data['target_url'] = $targeting['target_url'];
+        $data['domain'] = $targeting['domain'];
+        $data['website_status'] = $targeting['website_status'];
+        $data['ad_note'] = $targeting['ad_note'];
+        $data['product'] = $this->adstyle->getProductText($targeting['product_id']);
+        $data['status_text'] = $this->adstyle->getTargetingStatusText($targeting['status']);
+
+        $data['location'] = isset($targeting['location']) ? explode(",", $targeting['location']) : array();
+        $data['language'] = isset($targeting['language']) ? explode(",", $targeting['language']) : array();
+        $data['gender'] = isset($targeting['gender']) ? $targeting['gender'] : '';
+        $data['age_min'] = isset($targeting['age_min']) ? $targeting['age_min'] : '';
+        $data['age_max'] = isset($targeting['age_max']) ? $targeting['age_max'] : '';
+        $data['interest'] = isset($targeting['interest']) ? $targeting['interest'] : '';
+        $data['behavior'] = isset($targeting['behavior']) ? $targeting['behavior'] : '';
+        $data['more'] = isset($targeting['more']) ? $targeting['more'] : '';
+        $data['audience'] = isset($targeting['audience']) ? $targeting['audience'] : '';
+        $data['other_location'] = isset($targeting['other_location']) ? $targeting['other_location'] : '';
+        $data['other_language'] = isset($targeting['other_language']) ? $targeting['other_language'] : '';
+        $data['note'] = isset($targeting['note']) ? $targeting['note'] : '';
+
+        $this->load->model('user/user');
+        $locker = $this->model_user_user->getUser($targeting['locker']);
+        $keyer = empty($locker['username']) ? '' : $locker['nickname'];
+        // Lock Modify
+        $data['locked'] = $data['relax'] = $data['modify'] = false;
+        if(!$targeting['website_status']){
+            $data['locked'] = true;
+            $data['modify'] = false;
+            $data['text_lock'] = $this->language->get('text_website_status');
+        }else if(!empty($targeting['locker'])){
+            if($targeting['locker'] == $this->user->getId()){
+                $data['locked'] = false;
+                $data['modify'] = !in_array($targeting['status'], $this->config->get('ad_targeting_levels'));
+            }else{
+                $data['locked'] = true;
+                $data['modify'] = false;
+                $data['text_lock'] = sprintf($this->language->get('text_lock'),$keyer);
+                $data['relax'] = $this->validate();
+            }           
+        }else if(($this->user->getId() == $targeting['user_id'])){
+            $this->load->model('service/advertise');
+            $this->model_service_advertise->lockAdComponent((int)$targeting['targeting_id'] ,'targeting');
+            $data['modify'] = !in_array($targeting['status'], $this->config->get('ad_targeting_levels'));
+        }
+
+        //Page Text
+        $this->language->setText($data,array(
+            'button_save' => 'button_save',
+            'button_relax' => 'button_relax',
+            'button_cancel' => 'button_cancel',
+
+            'error_target_url' => 'error_target_url',
+            'error_invalid_url' => 'error_invalid_url',
+            'error_location' => 'error_location',
+            'error_language' => 'error_language',
+            'error_gender' => 'error_gender',
+            'entry_status' => 'entry_status',
+            'entry_target_url' => 'entry_target_url',
+            'entry_location' => 'entry_location',
+            'entry_other_location' => 'entry_other_location',
+            'entry_other_language' => 'entry_other_language',
+            'entry_language' => 'entry_language',
+            'entry_interest' => 'entry_interest',
+            'entry_behavior' => 'entry_behavior',
+            'entry_more' => 'entry_more',
+            'entry_audience' => 'entry_audience',
+            'entry_gender' => 'entry_gender',
+            'entry_age' => 'entry_age',
+            'entry_age_max' => 'entry_age_max',
+            'entry_age_min' => 'entry_age_min',
+            'entry_note' => 'entry_note',
+            'entry_product' => 'entry_product',
+            'entry_domain' => 'entry_domain',
+            'entry_ad_node' => 'entry_ad_node',
+
+            'tab_targeting' => 'tab_targeting',
+            'tab_history' => 'tab_history',
+            'text_advertise' => 'text_advertise',
+            'text_targeting' => 'text_targeting',
+        ));
+
+        $this->response->setOutput($this->load->view('service/advertise_targeting_form.tpl', $data));
+    }
+
+    protected function validate() {
+        if (!$this->user->isSupervisor() && !$this->user->isManager()) {
+            $this->error['warning'] = $this->language->get('error_permission');
+        }
+
+        return !$this->error;
+    }
+
+    public function history() {
+        $this->load->language('service/advertise_targeting');
+        $data['text_no_results'] = $this->language->get('text_no_results');
+        $data['column_date_added'] = $this->language->get('column_date_added');
+        $data['column_status'] = $this->language->get('column_status');
+        $data['column_operator'] = $this->language->get('column_operator');
+        $data['column_note'] = $this->language->get('column_note');
+
+        if (isset($this->request->get['page'])) {
+            $page = $this->request->get['page'];
+        } else {
+            $page = 1;
+        }
+
+        $data['histories'] = array();
+        $this->load->model('user/user');
+        $this->load->model('service/advertise_targeting');
+
+        $results = $this->model_service_advertise_targeting->getAdvertiseTargetingHistories($this->request->get['targeting_id'], ($page - 1) * 10, 10);
+
+        foreach ($results as $result) {
+            if($result['in_charge']){
+                $user = $this->model_user_user->getUser($result['in_charge']);
+                $operator = empty($user['username']) ? '' : $user['nickname'];
+            }else if($result['user_id']){
+                $user = $this->model_user_user->getUser($result['user_id']);
+                $operator = empty($user['username']) ? '' : $user['nickname'];
+            }else{
+                $operator = $this->language->get('entry_customer');
+            }
+
+            $data['histories'][] = array(
+                'operator'  => $operator,
+                'status'    => $result['status'],
+                'note'      => nl2br($result['note']),
+                'date_added'=> date('Y-m-d', strtotime($result['date_added'])).'<br>'. date('H:i:s', strtotime($result['date_added']))
+            );
+        }
+
+        $pagination = new Pagination();
+        $pagination->total = $this->model_service_advertise_targeting->getTotalAdvertiseTargetingHistories($this->request->get['targeting_id']);
+        $pagination->page = $page;
+        $pagination->limit = 10;
+        $pagination->url = $this->url->link('service/advertise_targeting/history', 'token=' . $this->session->data['token'] . '&targeting_id=' . $this->request->get['targeting_id'] . '&page={page}', 'SSL');
+        $data['pagination'] = $pagination->render();
+        $data['results'] = $pagination->getResults($this->language->get('text_pagination'));
+
+        $this->response->setOutput($this->load->view('service/advertise_history.tpl', $data));
+    }
+}

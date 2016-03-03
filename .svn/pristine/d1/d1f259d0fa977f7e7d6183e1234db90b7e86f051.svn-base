@@ -1,0 +1,142 @@
+<?php
+// Heading
+$_['heading_title']             = '广告设置';
+
+// Text
+$_['text_success']              = '成功: 你已修改了设置!';
+$_['text_edit']                 = '修改广告设置';
+$_['text_progress']             = '进度';
+$_['text_publish']              = '发布状态设定';
+$_['text_checkout']             = "创建广告设定";
+$_['text_group']                = "广告管理组";
+// Tab
+$_['tab_targeting']             = '定位';
+$_['tab_advertise']             = '广告';
+$_['tab_post']                  = '文本';
+$_['tab_photo']                 = '图片';
+$_['tab_role']                  = '角色';
+// Entry
+$_['entry_group_supervisor']            = "业务主管";
+$_['entry_group_manager']               = "客户经理";
+$_['entry_group_publisher']             = "推广主管";
+$_['entry_group_targeting']             = "市场分析师";
+$_['entry_group_post']                  = "英文客服";
+$_['entry_group_photo']                 = "美工";
+
+$_['help_group_manager']                = "客户经理";
+$_['help_group_publisher']              = "发布维护广告";
+
+$_['entry_checkout']                    = "条款";
+$_['entry_priority']                    = "默认排队级别";
+$_['entry_advertise_status']            = '广告状态';
+$_['entry_publish_queue']               = "发布状态：排队中";
+$_['entry_publish_designing']           = "发布状态：设计中";
+$_['entry_publish_waiting']             = "发布状态：待确认";
+$_['entry_publish_confirmed']           = "发布状态：已确认";
+$_['entry_publish_opening']             = "发布状态：发布中";
+$_['entry_publish_success']             = "发布状态：开户成功";
+$_['entry_publish_deliveried']          = "发布状态：已交货";
+$_['entry_publish_failed']              = "发布状态：开户失败";
+$_['entry_publish_refunded']            = "发布状态：已退款";
+$_['entry_publish_closed']              = "发布状态：已关闭";
+
+$_['entry_checkout']                    = "条款信息";
+// Help
+
+$_['help_checkout']                     = "指定一个创建广告时需要客户同意的条款信息";
+
+$_['help_publish_designing']            = "指定一个状态为发布状态的研发中状态";
+$_['help_publish_waiting']              = "指定一个状态为发布状态的待确认状态";
+$_['help_publish_confirmed']            = "指定一个状态为发布状态的已确认状态";
+$_['help_publish_opening']              = "指定一个状态为发布状态的发布中状态";
+$_['help_publish_success']              = "指定一个状态为发布状态的开户成功";
+$_['help_publish_deliveried']           = "指定一个状态为发布状态的已交货状态";
+$_['help_publish_failed']               = "指定一个状态为发布状态的开户失败";
+$_['help_publish_refunded']             = "指定一个状态为发布状态的已退款状态";
+$_['help_publish_closed']               = "指定一个状态为发布状态的已关闭状态";
+        //targeting
+$_['text_targeting_progress']           = "定位处理进度";
+$_['text_targeting_status']             = "定位状态";
+$_['text_targeting_level']              = "定位评级设定";
+
+$_['entry_targeting_progress_pending']  = "定位进度：待处理";
+$_['entry_targeting_progress_processing']    = "定位进度：处理中";
+$_['entry_targeting_progress_completed']= "定位进度：已完成";
+
+$_['entry_targeting_pending']           = "定位状态：待处理";
+$_['entry_targeting_transferred']       = "定位状态：已转交";
+$_['entry_targeting_review']            = "定位状态：待审查";
+$_['entry_targeting_levels']            = "定位状态：评级";
+$_['entry_targeting_rejected']          = "定位状态：已拒绝";
+
+
+$_['help_targeting_pending']            = "指定一个状态为定位的待处理状态";
+$_['help_targeting_transferred']        = "指定一个状态为定位的已转交状态";
+$_['help_targeting_review']             = "指定一个状态为定位的待审查状态";
+$_['help_targeting_levels']             = "指定多个状态为定位的评级状态";
+$_['help_targeting_rejected']           = "指定一个状态为定位的已拒绝状态";
+
+$_['help_targeting_progress_pending']   = "将定位状态中某些状态指定为待处理的进度";
+$_['help_targeting_progress_processing']= "将定位状态中某些状态指定为处理中的进度";
+$_['help_targeting_progress_completed'] = "将定位状态中某些状态指定为已完成的进度";
+
+        //post
+$_['text_post_progress']                = "稿件处理进度";
+$_['text_post_status']                  = "稿件状态";
+$_['text_targeting_level']              = "稿件评级设定";
+
+$_['entry_post_progress_pending']       = "稿件进度：待处理";
+$_['entry_post_progress_processing']    = "稿件进度：处理中";
+$_['entry_post_progress_completed']     = "稿件进度：已完成";
+
+$_['entry_post_pending']                = "稿件状态：待处理";
+$_['entry_post_transferred']            = "稿件状态：已转交";
+$_['entry_post_review']                 = "稿件状态：待审查";
+$_['entry_post_robot_review']           = "稿件状态：机器待审查";
+$_['entry_post_levels']                 = "稿件状态：评级";
+$_['entry_post_rejected']               = "稿件状态：已拒绝";
+$_['entry_similar_headline']            = "稿件的标题相似度";
+$_['entry_similar_content']             = "稿件的内容相似度";
+
+$_['help_post_progress_pending']        = "将稿件状态中某些状态指定为待处理的进度";
+$_['help_post_progress_processing']     = "将稿件状态中某些状态指定为处理中的进度";
+$_['help_post_progress_completed']      = "将稿件状态中某些状态指定为已完成的进度";
+
+$_['help_post_pending']                 = "指定一个状态为稿件的待处理状态";
+$_['help_post_transferred']             = "指定一个状态为稿件的已转交状态";
+$_['help_post_review']                  = "指定一个状态为稿件的待审查状态";
+$_['help_post_robot_review']            = "指定一个状态为稿件的机器待审查状态";
+$_['help_post_levels']                  = "指定多个状态为稿件的评级状态";
+$_['help_post_rejected']                = "指定一个状态为稿件的已拒绝状态";
+$_['help_similar_headline']             = "指定一个数值为稿件标题的相似度百分比";
+$_['help_similar_content']              = "指定一个数值为稿件内容的相似度百分比";
+
+        //photo
+$_['text_photo_progress']               = "图片处理进度";
+$_['text_photo_status']                 = "图片状态";
+$_['text_targeting_level']              = "图片评级设定";
+
+$_['entry_photo_progress_pending']      = "图片进度：待处理";
+$_['entry_photo_progress_processing']   = "图片进度：处理中";
+$_['entry_photo_progress_completed']    = "图片进度：已完成";
+
+$_['entry_photo_pending']               = "图片状态：待处理";
+$_['entry_photo_transferred']           = "图片状态：已转交";
+$_['entry_photo_review']                = "图片状态：待审查";
+$_['entry_photo_levels']                = "图片状态：评级";
+$_['entry_photo_rejected']              = "图片状态：已拒绝";
+
+$_['help_photo_pending']                = "指定一个状态为图片的待处理状态";
+$_['help_photo_transferred']            = "指定一个状态为图片的已转交状态";
+$_['help_photo_review']                 = "指定一个状态为图片的待审查状态";
+$_['help_photo_levels']                 = "指定多个状态为图片的评级状态";
+$_['help_photo_rejected']               = "指定一个状态为图片的已拒绝状态";
+
+$_['help_photo_progress_pending']       = "将图片状态中某些状态指定为待处理的进度";
+$_['help_photo_progress_processing']    = "将图片状态中某些状态指定为处理中的进度";
+$_['help_photo_progress_completed']     = "将图片状态中某些状态指定为已完成的进度";
+
+
+// Error
+$_['error_warning']                     = '警告: 请认真检查表单中错误的内容!';
+$_['error_permission']                  = '警告: 你没有权限修改设置!';

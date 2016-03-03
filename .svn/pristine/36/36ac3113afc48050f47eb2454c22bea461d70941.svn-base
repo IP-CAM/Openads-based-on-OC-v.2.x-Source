@@ -1,0 +1,377 @@
+<?php echo $header; ?><?php echo $column_left; ?>
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <a href="javascript:window.history.go(-1);" data-toggle="tooltip" title="<?php echo $button_cancel; ?>" class="btn btn-default"><i class="fa fa-reply"></i></a></div>
+      <h1><?php echo $heading_title; ?></h1>
+      <ul class="breadcrumb">
+        <?php foreach ($breadcrumbs as $breadcrumb) { ?>
+        <li><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a></li>
+        <?php } ?>
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <?php if ($error_warning) { ?>
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $error_warning; ?>
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <?php if ($locked) { ?>
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $text_lock; ?>
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <?php if ($success) { ?>
+    <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo $success; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-pencil"></i> <?php echo $text_form; ?></h3>
+      </div>
+      <div class="panel-body">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#tab-post" data-toggle="tab"><?php echo $tab_targeting; ?></a></li>
+                <li><a href="#tab-history" data-toggle="tab"><?php echo $tab_history; ?></a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane active" id="tab-post">
+
+                <div class="col-sm-4">
+                    <div class="panel panel-info">
+                        <div class="panel-heading"><?php echo $tab_advertise ?></div>
+                        <div class="panel-body">  
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label><?php echo $entry_website ?></label>
+                                    <div class="well" readonly >
+                                        <?php echo $domain ?>
+                                        <?php if(!$website_status){ ?>
+                                        <br>
+                                        <?php echo $website_status_text ?>
+                                        <?php }?>
+                                    </div>
+                                </div>
+                            </div>          
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label ><?php echo $entry_customer ?></label>
+                                    <span class="form-control" readonly><?php echo $company ?> <i><?php echo $customer ?></i></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label><?php echo $entry_product ?></label>
+                                    <span class="form-control" readonly><?php echo $product ?></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label><?php echo $entry_advertise_sn ?></label>
+                                    <span class="form-control" readonly><?php echo $advertise_sn ?></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label><?php echo $entry_from ?></label>
+                                    <span class="form-control" readonly><?php echo $from=='member' ? $entry_from_member : $entry_from_backend ?></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label><?php echo $entry_in_charge ?></label>
+                                    <span class="form-control" readonly><?php echo $charger ?></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label><?php echo $entry_operator ?></label>
+                                    <span class="form-control" readonly><?php echo $operator ?></span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label><?php echo $entry_note ?></label>
+                                    <textarea class="form-control" readonly><?php echo $ad_note ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-8">
+                    <form method="post" class="form-horizontal" id="ad-targeting-update" action="<?php echo $action ?>"> 
+                    <div class="panel panel-primary">
+                        <div class="panel-heading"><?php echo $tab_targeting ?></div>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_target_url ?></label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control" name="target_url" <?php echo $modify ? '' : 'readonly' ?> value="<?php echo $target_url ?>">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_status ?></label>
+                                <div class="col-sm-10">
+                                    <?php echo $status_text ?>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_location ?></label>
+                                <div class="col-sm-10">
+                                    <div class="checkbox">
+                                        <?php foreach ($locations as $item): ?>
+                                        <label class="checkbox-inline">
+                                            <input type="checkbox" name="location[]" value="<?php echo $item['targeting_id'] ?>" <?php echo in_array($item['targeting_id'], $location) ? 'checked' : '' ?> <?php echo $modify ? '' : 'readonly' ?>/>
+                                            <?php echo $item['name'] ?>
+                                        </label>    
+                                        <?php endforeach ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_other_location ?></label>
+                                <div class="col-sm-10">
+                                    <textarea class="form-control" <?php echo $modify ? '' : 'readonly' ?> name="other_location"><?php echo $other_location ?></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_age ?></label>
+                                <div class="col-sm-10">
+                                    <div class="input-group">
+                                    <select class="form-control" style="width:80px;margin-right:20px;" name="age_min"  title="<?php echo $entry_age_min ?>" <?php echo $modify ? '' : 'readonly' ?>>
+                                        <?php for ($i=13; $i <66; $i++) { ?>
+                                        <option value="<?php echo $i ?>" <?php echo $i==$age_min ? 'selected="selected"' : '' ?>>
+                                            <?php echo (int)$i ?>
+                                        </option>
+                                        <?php }?>
+                                    </select>
+                                    <select class="form-control" style="width:80px" name="age_max" data-toggle="tooltip" title="<?php echo $entry_age_max ?>" <?php echo $modify ? '' : 'readonly' ?>>
+                                        <?php for ($i=13; $i <65; $i++) { ?>
+                                        <option value="<?php echo $i ?>" <?php echo $i==$age_max ? 'selected="selected"' : '' ?>>
+                                            <?php echo (int)$i ?>
+                                        </option>
+                                        <?php }?>
+                                        <option value="100" <?php echo !$age_max || $age_max==100 ? 'selected="selected"' : ''; ?>><?php echo '65+' ?></option>
+                                    </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_gender ?></label>
+                                <div class="col-sm-10">
+                                    <div class="radio" >
+                                        <?php foreach ($genders as $item): ?>
+                                        <label class="radio-inline">
+                                            <input type="radio" name="gender" value="<?php echo $item['targeting_id'] ?>" <?php echo $gender==$item['targeting_id'] ? 'checked' : '' ?> <?php echo $modify ? '' : 'readonly' ?>/>
+                                            <?php echo $item['name'] ?>
+                                        </label>    
+                                        <?php endforeach ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_language ?></label>
+                                <div class="col-sm-10">
+                                    <div class="checkbox" >
+                                        <?php foreach ($languages as $item): ?>
+                                        <label class="checkbox-inline">
+                                            <input type="checkbox" name="language[]" value="<?php echo $item['targeting_id'] ?>" <?php echo in_array($item['targeting_id'], $language) ? 'checked' : '' ?> <?php echo $modify ? '' : 'readonly' ?>/>
+                                            <?php echo $item['name'] ?>
+                                        </label>    
+                                        <?php endforeach ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_other_language ?></label>
+                                <div class="col-sm-10">
+                                    <textarea class="form-control" <?php echo $modify ? '' : 'readonly' ?> name="other_language"><?php echo $other_language ?></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_interest ?></label>
+                                <div class="col-sm-10">
+                                    <textarea name="interest" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $interest ?></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_behavior ?></label>
+                                <div class="col-sm-10">
+                                    <textarea name="behavior" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $behavior ?></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_more ?></label>
+                                <div class="col-sm-10">
+                                    <textarea name="more" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $more ?></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"><?php echo $entry_note ?></label>
+                                <div class="col-sm-10">
+                                    <textarea name="note" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $note ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <?php if($locked && $unblocked){?>
+                        <div class="panel-footer">
+                            <div class="buttons text-right">
+                                <button type="button" id="btn-unlock" data-toggle="tooltip" title="<?php echo $button_unlock; ?>" class="btn btn-warning">
+                                    <i class="fa fa-unlock"></i> <?php echo $button_unlock; ?>
+                                </button>
+                            </div>
+                        </div>
+                        <?php }else if($modify){?>
+                        <div class="panel-footer">
+                            <div class="buttons text-right">
+                                <button form="ad-targeting-update" data-toggle="tooltip" title="<?php echo $button_update; ?>" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> <?php echo $button_update; ?>
+                                </button>
+                            </div>
+                        </div>
+                        <?php }?>
+                    </div>
+                    </form>
+                </div>
+                <div class="col-sm-12">
+                    <?php if($approve){?>
+                    <form method="post" action="<?php echo $approve_form ?>" id="ad-targeting-approve">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title"><i class="fa fa-level-up"></i> <?php echo $text_approve; ?></h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="form-group clearfix">
+                                <label class="col-sm-2 control-label text-right"><?php echo $entry_status ?></label>
+                                <div class="col-sm-8">
+                                    <select name="status" class="form-control">
+                                    <?php foreach ($targeting_statuses as $item): ?>
+                                        <option value="<?php echo $item['status_id'] ?>" <?php echo $status == $item['status_id'] ? 'selected' : '' ?>>
+                                            <?php echo $item['name'] ?>
+                                        </option>
+                                    <?php endforeach ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group clearfix">
+                                <label class="col-sm-2 control-label text-right"><?php echo $entry_note ?></label>
+                                <div class="col-sm-8">
+                                    <textarea name="note" class="form-control"><?php echo $note ?></textarea>
+                                </div>
+                            </div>
+                            <input type="hidden" name="targeting_id" value="<?php echo $targeting_id ?>">
+                            <input type="hidden" name="mode" value="targeting">
+                        </div>
+                        <div class="panel-footer">
+                            <div class="buttons text-right">
+                                <button form="ad-targeting-approve" data-toggle="tooltip" title="<?php echo $button_save; ?>" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> <?php echo $button_save; ?>
+                                </button>
+                                <?php if($reset){ ?>
+                                <button type="button" id="btn-reset" data-toggle="tooltip" title="<?php echo $button_reset; ?>" class="btn btn-warning">
+                                    <i class="fa fa-user"></i> <?php echo $button_reset; ?>
+                                </button>
+                                <?php }?>
+                            </div>
+                        </div>
+                    </div>
+                    </form>
+                    <?php }?>
+                </div>
+            </div>
+            <div class="tab-pane" id="tab-history">
+                <div id="history"></div>
+                <br />
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript"><!--
+    <?php if($modify){?>
+    $(function() {
+        $('#ad-targeting-update')
+        .formValidation({
+            framework:'bootstrap',
+            icon: {
+                valid: 'glyphicon glyphicon-ok',
+                invalid: 'glyphicon glyphicon-remove',
+                validating: 'glyphicon glyphicon-refresh'
+            },
+            fields: {
+                'target_url':{
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_target_url ?>'
+                        },
+                        uri:{
+                            message: '<?php echo $error_invalid_url ?>'
+                        }
+                    }
+                },
+                'location[]': {
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_location ?>'
+                        }
+                    }
+                },
+                'language[]': {
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_language ?>'
+                        }
+                    }
+                },
+
+                'gender': {
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_gender ?>'
+                        }
+                    }
+                }
+            }
+        })
+        .on('success.form.fv', function(e) {
+            e.preventDefault();
+            var $form = $(e.target);
+            if(confirm('<?php echo $text_confirm_save ?>')){
+                $.post($form.attr('action'), $form.serialize(),function(){location.reload()});
+            }
+        });
+
+    });
+    <?php }?>
+    $('#btn-reset').bind('click',function(){
+        if(confirm('<?php echo $text_confirm_reset ?>')){
+            _component.update(
+                '<?php echo $mode_action ?>',
+                {action:'reset',mode:'targeting',entry_id:'<?php echo $targeting_id ?>'}
+            );
+        }
+    });
+    $('#btn-unlock').bind('click',function(){
+        if(confirm('<?php echo $text_confirm_relax ?>')){
+            _component.update(
+                '<?php echo $mode_action ?>',
+                {action:'unlock',mode:'targeting',entry_id:'<?php echo $targeting_id ?>'}
+            );
+        }
+    });
+
+    $('#history').delegate('.pagination a', 'click', function(e) {
+        e.preventDefault();
+        $('#history').load(this.href);
+    });
+    $('#history').load('index.php?route=service/advertise_targeting/history&token=<?php echo $token; ?>&targeting_id=<?php echo $targeting_id; ?>');
+
+//--></script>
+
+<?php echo $footer; ?>

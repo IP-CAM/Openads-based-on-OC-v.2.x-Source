@@ -1,0 +1,420 @@
+<?php
+class ControllerUserRole extends Controller {
+	private $error = array();
+
+	public function index() {
+		$this->load->language('user/role');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/role');
+
+		$this->getList();
+	}
+
+	public function add() {
+		$this->load->language('user/role');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/role');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm('user/role/add')) {
+			
+			$this->model_user_role->addRole($this->request->post);
+
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+
+			if (isset($this->request->get['sort'])) {
+				$url .= '&sort=' . $this->request->get['sort'];
+			}
+
+			if (isset($this->request->get['order'])) {
+				$url .= '&order=' . $this->request->get['order'];
+			}
+
+			if (isset($this->request->get['page'])) {
+				$url .= '&page=' . $this->request->get['page'];
+			}
+
+			$this->response->redirect($this->url->link('user/role', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+			
+		}
+
+		$this->getForm();
+	}
+
+	public function edit() {
+		$this->load->language('user/role');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/role');
+
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm('user/role/edit')) {
+			$this->model_user_role->editRole($this->request->get['role_id'], $this->request->post);
+
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+
+			if (isset($this->request->get['sort'])) {
+				$url .= '&sort=' . $this->request->get['sort'];
+			}
+
+			if (isset($this->request->get['order'])) {
+				$url .= '&order=' . $this->request->get['order'];
+			}
+
+			if (isset($this->request->get['page'])) {
+				$url .= '&page=' . $this->request->get['page'];
+			}
+
+			$this->response->redirect($this->url->link('user/role', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+		}
+
+		$this->getForm();
+	}
+
+	public function delete() {
+		$this->load->language('user/role');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		$this->load->model('user/role');
+
+		if (isset($this->request->post['selected']) && $this->validateDelete('user/role/delete')) {
+			
+			foreach ($this->request->post['selected'] as $role_id) {
+				$this->model_user_role->deleteRole($role_id);
+			}
+
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$url = '';
+
+			if (isset($this->request->get['sort'])) {
+				$url .= '&sort=' . $this->request->get['sort'];
+			}
+
+			if (isset($this->request->get['order'])) {
+				$url .= '&order=' . $this->request->get['order'];
+			}
+
+			if (isset($this->request->get['page'])) {
+				$url .= '&page=' . $this->request->get['page'];
+			}
+
+			$this->response->redirect($this->url->link('user/role', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+		}
+
+		$this->getList();
+	}
+
+	protected function getList() {
+		if (isset($this->request->get['sort'])) {
+			$sort = $this->request->get['sort'];
+		} else {
+			$sort = 'user_id';
+		}
+
+		if (isset($this->request->get['order'])) {
+			$order = $this->request->get['order'];
+		} else {
+			$order = 'ASC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$page = $this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$url = '';
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('user/role', 'token=' . $this->session->data['token'] . $url, 'SSL')
+		);
+
+		$data['add'] = $this->url->link('user/role/add', 'token=' . $this->session->data['token'] . $url, 'SSL');
+		$data['delete'] = $this->url->link('user/role/delete', 'token=' . $this->session->data['token'] . $url, 'SSL');
+
+		$data['roles'] = array();
+
+		$filter_data = array(
+			'sort'  => $sort,
+			'order' => $order,
+			'start' => ($page - 1) * $this->config->get('config_limit_admin'),
+			'limit' => $this->config->get('config_limit_admin')
+		);
+
+		$user_total = $this->model_user_role->getTotalRoles();
+
+		$results = $this->model_user_role->getRoles($filter_data);
+
+		foreach ($results as $result) {
+			$modules =array();
+			$resultModules = explode(",", $result['modules']);
+			if(is_array($resultModules)){
+				foreach ($resultModules as $Module_id) {
+					$_c = $this->model_user_role->getModule($Module_id);
+					if(isset($_c['name'])){
+						$modules[] = $_c['name'];
+					}
+				}
+			}
+			$data['roles'][] = array(
+				'role_id'    => $result['role_id'],
+				'role_name'   => $result['role_name'],
+				'decription'   	 => $result['decription'],
+				'modules'    => implode(",", $modules),
+				
+				'modified_date' => date($this->language->get('date_format_short'), strtotime($result['modified_date'])),
+				'edit'       => $this->url->link('user/role/edit', 'token=' . $this->session->data['token'] . '&role_id=' . $result['role_id'] . $url, 'SSL')
+			);
+		}
+
+		$data['heading_title'] = $this->language->get('heading_title');
+		
+		$data['text_list'] = $this->language->get('text_list');
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['text_confirm'] = $this->language->get('text_confirm');
+
+		$data['column_username'] = $this->language->get('column_username');
+
+		$data['column_decription'] = $this->language->get('column_decription');
+		$data['column_modules'] = $this->language->get('column_modules');
+		
+        $data['column_date_added'] = $this->language->get('column_date_added');
+		$data['column_date_modify'] = $this->language->get('column_date_modify');
+		$data['column_action'] = $this->language->get('column_action');
+
+		$data['button_add'] = $this->language->get('button_add');
+		$data['button_edit'] = $this->language->get('button_edit');
+		$data['button_delete'] = $this->language->get('button_delete');
+
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->session->data['success'])) {
+			$data['success'] = $this->session->data['success'];
+
+			unset($this->session->data['success']);
+		} else {
+			$data['success'] = '';
+		}
+
+		if (isset($this->request->post['selected'])) {
+			$data['selected'] = (array)$this->request->post['selected'];
+		} else {
+			$data['selected'] = array();
+		}
+
+		$url = '';
+
+		if ($order == 'ASC') {
+			$url .= '&order=DESC';
+		} else {
+			$url .= '&order=ASC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['sort_role_name'] = $this->url->link('user/role', 'token=' . $this->session->data['token'] . '&sort=role_name' . $url, 'SSL');
+		$data['sort_status'] = $this->url->link('user/role', 'token=' . $this->session->data['token'] . '&sort=status' . $url, 'SSL');
+		$data['sort_date_added'] = $this->url->link('user/role', 'token=' . $this->session->data['token'] . '&sort=date_added' . $url, 'SSL');
+
+		$url = '';
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		$pagination = new Pagination();
+		$pagination->total = $user_total;
+		$pagination->page = $page;
+		$pagination->limit = $this->config->get('config_limit_admin');
+		$pagination->url = $this->url->link('user/role', 'token=' . $this->session->data['token'] . $url . '&page={page}', 'SSL');
+
+		$data['pagination'] = $pagination->render();
+
+		$data['results'] = sprintf($this->language->get('text_pagination'), ($user_total) ? (($page - 1) * $this->config->get('config_limit_admin')) + 1 : 0, ((($page - 1) * $this->config->get('config_limit_admin')) > ($user_total - $this->config->get('config_limit_admin'))) ? $user_total : ((($page - 1) * $this->config->get('config_limit_admin')) + $this->config->get('config_limit_admin')), $user_total, ceil($user_total / $this->config->get('config_limit_admin')));
+
+		$data['sort'] = $sort;
+		$data['order'] = $order;
+
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+
+		$this->response->setOutput($this->load->view('user/role_list.tpl', $data));
+	}
+
+	protected function getForm() {
+		$data['heading_title'] = $this->language->get('heading_title');
+		
+		$data['text_form'] = !isset($this->request->get['role_id']) ? $this->language->get('text_add') : $this->language->get('text_edit');
+		$data['text_enabled'] = $this->language->get('text_enabled');
+		$data['text_disabled'] = $this->language->get('text_disabled');
+
+		$data['entry_role_name'] = $this->language->get('entry_role_name');
+		$data['entry_decription'] = $this->language->get('entry_decription');
+		$data['entry_moduels'] = $this->language->get('entry_moduels');
+
+		$data['button_save'] = $this->language->get('button_save');
+		$data['button_cancel'] = $this->language->get('button_cancel');
+
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->error['role_name'])) {
+			$data['error_role_name'] = $this->error['role_name'];
+		} else {
+			$data['error_role_name'] = '';
+		}
+
+
+
+		$url = '';
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('user/role', 'token=' . $this->session->data['token'] . $url, 'SSL')
+		);
+
+		if (!isset($this->request->get['role_id'])) {
+			$data['action'] = $this->url->link('user/role/add', 'token=' . $this->session->data['token'] . $url, 'SSL');
+		} else {
+			$data['action'] = $this->url->link('user/role/edit', 'token=' . $this->session->data['token'] . '&role_id=' . $this->request->get['role_id'] . $url, 'SSL');
+		}
+
+		$data['cancel'] = $this->url->link('user/role', 'token=' . $this->session->data['token'] . $url, 'SSL');
+
+		if (isset($this->request->get['role_id']) && ($this->request->server['REQUEST_METHOD'] != 'POST')) {
+			$role_info = $this->model_user_role->getRoleInfo($this->request->get['role_id']);
+		}
+
+		if (isset($this->request->post['role_name'])) {
+			$data['role_name'] = $this->request->post['role_name'];
+		} elseif (!empty($role_info)) {
+			$data['role_name'] = $role_info['role_name'];
+		} else {
+			$data['role_name'] = '';
+		}
+
+		if (isset($this->request->get['role_id'])) {
+			$data['role_id'] = $this->request->get['role_id'];
+		} elseif (!empty($role_info)) {
+			$data['role_id'] = $role_info['role_id'];
+		} else {
+			$data['role_id'] = '';
+		}
+
+		if (isset($this->request->post['modules'])) {
+    		$data['modules'] = $this->request->post['modules'];
+		} elseif (!empty($role_info['modules'])) {
+			$moduless =  explode(",", $role_info['modules']);
+			$data['modules'] = is_array($moduless) ? $moduless : array(); 
+		} else {
+			$data['modules'] = array();
+		}
+
+
+		if (isset($this->request->post['decription'])) {
+			$data['decription'] = $this->request->post['decription'];
+		} elseif (!empty($role_info['decription'])) {
+			$data['decription'] = $role_info['decription'];
+		} else {
+			$data['decription'] = '';
+		}
+
+		$data['all_modules'] = $this->model_user_role->getModules();
+
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+
+		$this->response->setOutput($this->load->view('user/role_form.tpl', $data));
+	}
+
+	protected function validateForm($route) {
+	//	if (!$this->user->hasPermission($route)) {
+	//		$this->error['warning'] = $this->language->get('error_permission');
+	//	}
+
+		if ((utf8_strlen($this->request->post['role_name']) < 3) || (utf8_strlen($this->request->post['role_name']) > 32)) {
+			$this->error['role_name'] = $this->language->get('role_name');
+		}
+
+		return !$this->error;
+	}
+
+	protected function validateDelete($route) {
+		//if (!$this->user->hasPermission($route)) {
+		//	$this->error['warning'] = $this->language->get('error_permission');
+		//}
+
+		foreach ($this->request->post['selected'] as $role_id) {
+			$result=$this->model_user_role->isRoleIdInUsed($role_id);
+			
+			if ($result) {
+				$this->error['warning'] = $this->language->get('error_permission');
+			}
+		}
+
+		return !$this->error;
+	}
+}

@@ -1,0 +1,230 @@
+<div  class="col-sm-12 clearfix">
+<form method="post" class="form-horizontal" id="component-post">
+    <input type="hidden" name="entry_id" value="<?php echo $entry_id ?>">
+    <input type="hidden" name="mode" value="post">
+    <div class="do-result">
+        <?php if($locked){?>
+        <div class="alert alert-warning">
+            <i class="fa fa-exclamation-circle"></i> 
+            <?php echo $text_lock ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        <?php }?>
+    </div>
+    <?php if(!$locked && $transfer){ ?>
+    <div class="form-group">
+        <label class="col-sm-2 control-label"><?php echo $entry_author ?></label>
+        <div class="col-sm-10">
+            <select name="user_id" class="form-control">
+            <?php foreach ($contributors as $item): ?>
+                <option value="<?php echo $item['user_id'] ?>" <?php echo $user_id == $item['user_id'] ? 'selected' : '' ?>><?php echo $item['name'] ?></option>
+            <?php endforeach ?>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label"><?php echo $entry_note ?></label>
+        <div class="col-sm-10">
+            <textarea name="note" class="form-control"><?php echo $note ?></textarea>
+        </div>
+    </div>
+    <hr>
+
+    <input type="hidden" name="action" value="transfer">
+    <?php if($overview){ ?>
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+            <button type="button" id="btn-post-transfer" class="btn btn-primary" >
+                <?php echo $button_transfer ?>
+            </button>
+        </div>
+    </div>
+    <?php }?>
+    <?php }else{ ?>
+    <?php if(!empty($operator)){?>
+    <div class="form-group">
+        <label class="col-sm-2 control-label"><?php echo $entry_author ?></label>
+        <div class="col-sm-10">
+            <pre><?php echo $operator ?></pre>
+        </div>
+    </div>
+    <?php } ?>
+    <div class="form-group">
+        <label class="col-sm-2 control-label"><?php echo $entry_headline ?></label>
+        <div class="col-sm-10 highlight">
+            <textarea class="form-control" ><?php echo html_entity_decode($headline) ?></textarea>
+            <div class="zero-clipboard hidden">
+                <span class="btn-clipboard"><?php echo $text_copy ?></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label"><?php echo $entry_post_text ?></label>
+        <div class="col-sm-10">
+            <textarea class="form-control" rows="4"><?php echo $text ?></textarea>
+            <div class="zero-clipboard hidden">
+                <span class="btn-clipboard"><?php echo $text_copy ?></span>
+            </div>
+        </div>
+    </div>
+    <?php if(!isset($display_date_modified) || $display_date_modified ===true){?>
+    <div class="form-group">
+        <label class="col-sm-2 control-label"><?php echo $entry_last_modified ?></label>
+        <div class="col-sm-10">
+            <pre><?php echo $date_modified ?></pre>
+        </div>
+    </div>
+    <?php }?>
+    <?php if(!$locked && $modify){ ?>
+    <fieldset>
+        <legend></legend>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><?php echo $entry_status ?></label>
+            <div class="col-sm-10">
+                <select name="status" class="form-control">
+                <?php foreach ($post_statuses as $item): ?>
+                    <option value="<?php echo $item['status_id'] ?>" <?php echo $status == $item['status_id'] ? 'selected' : '' ?>>
+                        <?php echo $item['name'] ?>
+                    </option>
+                <?php endforeach ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><?php echo $entry_note ?></label>
+            <div class="col-sm-10">
+                <textarea name="note" class="form-control"><?php echo $note ?></textarea>
+            </div>
+        </div>
+        <input type="hidden" name="action" value="approve">
+    </fieldset>
+    <?php if($overview){ ?>
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+            <?php if($reset){ ?>
+            <button type="button" id="btn-post-reset" class="btn btn-warning">
+                <span class="glyphicon glyphicon-user"></span>
+                <?php echo $button_reset ?>
+            </button>
+            <?php }?>            
+            <button type="button"  id="btn-post-approve" class="btn btn-primary">
+                <span class="glyphicon glyphicon-ok-circle"></span>
+                <?php echo $button_save ?>
+            </button>
+        </div>
+    </div>
+    <?php }?>
+    <?php }?>
+    <?php if($unblocked && $overview){ ?>
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+            <button type="button" id="btn-post-unlock" class="btn btn-warning">
+                <i class="fa fa-unlock"></i>
+                <?php echo $button_unlock ?>
+            </button>
+        </div>
+    </div>
+    <?php }?>
+<?php }?>
+</form>
+</div>
+<script type="text/javascript"><!--
+<?php if($overview){ ?>
+    $('#btn-post-transfer').bind('click',function(){
+        if(confirm('<?php echo $text_confirm_transfer ?>')){
+            _component.update(
+                '<?php echo $mode_action ?>',
+                $('#component-post').serialize()
+            );
+        }
+    });
+    $('#btn-post-approve').bind('click',function(){
+        if(confirm('<?php echo $text_confirm ?>')){
+            _component.update(
+                '<?php echo $mode_action ?>',
+                $('#component-post').serialize()
+            );
+        }
+    });
+    $('#btn-post-reset').bind('click',function(){
+        if(confirm('<?php echo $text_confirm_reset ?>')){
+            _component.update(
+                '<?php echo $mode_action ?>',
+                {action:'reset',mode:'post',entry_id:'<?php echo $entry_id ?>'}
+            );
+        }
+    });
+    $('#btn-post-unlock').bind('click',function(){
+        if(confirm('<?php echo $text_confirm_relax_targeting ?>')){
+            _component.update(
+                '<?php echo $mode_action ?>',
+                {action:'unlock',mode:'post',entry_id:'<?php echo $entry_id ?>'}
+            );
+        }
+    });
+<?php }else{ ?>
+    $('#component-detail').dialog('option', 'title', '<?php echo $heading_title ?>');
+    $('#component-detail').dialog('option', 'buttons',
+        {
+            '<?php echo $button_close ?>':function(e){
+                _component.update(
+                    '<?php echo $mode_action ?>',
+                    {action:'unlock',mode:'post',entry_id:'<?php echo $entry_id ?>',valide:1,unlock:1},
+                    false
+                );
+                $(this).dialog('close');
+            }
+        <?php if(!$locked && $modify){ ?>
+            ,
+        <?php if($transfer){ ?>
+            '<?php echo $button_transfer ?>':function(e){
+                if(confirm('<?php echo $text_confirm_transfer ?>')){
+                    _component.update(
+                        '<?php echo $mode_action ?>',
+                        $('#component-post').serialize()
+                    );
+                }
+            }
+        <?php }else{ ?>
+            <?php if($reset){ ?>
+            '<?php echo $button_reset ?>':function(e){
+                if(confirm('<?php echo $text_confirm_reset_author ?>')){
+                    _component.update(
+                        '<?php echo $mode_action ?>',
+                        {action:'reset',mode:'post',entry_id:'<?php echo $entry_id ?>'}
+                    );
+                }
+            }
+            ,
+            <?php } ?>
+            '<?php echo $button_save ?>':function(dialogRef){
+                if(confirm('<?php echo $text_confirm ?>')){
+                    _component.update(
+                        '<?php echo $mode_action ?>',
+                        $('#component-post').serialize()
+                    );
+                }
+            }
+        <?php }?>
+        <?php }?>
+        <?php if($unblocked){ ?>
+            ,
+            '<?php echo $button_unlock ?>':function(dialogRef){
+                if(confirm('<?php echo $text_confirm_relax_post ?>')){
+                    _component.update(
+                        '<?php echo $mode_action ?>',
+                        {action:'unlock',mode:'post',entry_id:'<?php echo $entry_id ?>'}
+                    );
+                }
+            }
+        <?php }?>
+    });
+
+<?php }?>
+
+//-->
+</script>
+
+<style type="text/css">
+    .form-group pre{height: 35px;}
+</style>

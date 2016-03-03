@@ -1,0 +1,372 @@
+<?php echo $header; ?><?php echo $column_left; ?>
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="pull-right">
+                <a href="javascript:history.go(-1);" data-toggle="tooltip" title="<?php echo $button_cancel; ?>" class="btn btn-default"><i class="fa fa-reply"></i></a>
+            </div>
+            <h1><?php echo $heading_title; ?></h1>
+            <ul class="breadcrumb">
+                <?php foreach ($breadcrumbs as $breadcrumb) { ?>
+                    <li><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a></li>
+                <?php } ?>
+            </ul>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div class="do-result">
+            <?php if ($error_warning) { ?>
+                <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $error_warning; ?>
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            <?php } ?>
+            <?php if ($success) { ?>
+                <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo $success; ?>
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            <?php } ?>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="col-sm-7">
+                    <div class="panel panel-info" id="tree-panel">
+                        <div class="panel-heading">
+                            <h3>Node Tree</h3>
+                            <div class="pull-right">
+                                <a id="sync" class="btn btn-warning btn-sm" >
+                                    <?php echo $text_sync;?>
+                                </a>
+                                <a id="toggle" class="btn btn-info btn-sm" data-click="0">
+                                    <?php echo $text_expand_collapse;?>
+                                </a>
+
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="do-result"></div>
+                            <div class="tree well well-sm" id="tree" style="height: 560px;overflow-y: auto"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-5">
+                    <div class="panel panel-primary" id="node-panel">
+                        <form class="form-horizontal" id="node-form">
+                            <div class="panel-heading">
+                                <h3 id="node-title">Edit Node</h3>
+                                <div class="pull-right">
+                                    <a class="btn btn-primary btn-sm" id="root"><?php echo $text_create_root?></a>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="do-result"></div>
+                                <div class="form-group">
+                                    <label for="parent-name" class="control-label col-sm-3"><?php echo $entry_path?></label>
+                                    <div class="col-sm-9">
+                                        <input type="hidden" name="node_id">
+                                        <input type="hidden" name="parent_id">
+                                        <span id="parent-name">/</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="catalog" class="control-label col-sm-3"><?php echo $entry_catalog ?></label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="catalog" name="catalog">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="key" class="control-label col-sm-3"><?php echo $entry_class ?></label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="class" name="class">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="key" class="control-label col-sm-3"><?php echo $entry_function ?></label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="function" name="function">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="title" class="control-label col-sm-3"><?php echo $entry_title ?></label>
+                                    <div class="col-sm-9">
+                                        <?php foreach ($languages as $language) { ?>
+                                        <div class="input-group">
+                                            <span class="input-group-addon">
+                                                <img src="<?php echo TPL_IMG ?>flags/<?php echo $language['image']; ?>" title="<?php echo $language['title']; ?>" />
+                                            </span>
+                                            <input type="text" name="note[<?php echo $language['code']; ?>]" placeholder="<?php echo $language['code']; ?>" class="form-control" />
+                                        </div>
+                                        <?php } ?>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="status" class="control-label col-sm-3"><?php echo $entry_status ?></label>
+                                    <div class="col-sm-9">
+                                        <select name="status" class="form-control">
+                                            <option value="1"><?php echo $text_yes;?></option>
+                                            <option value="0"><?php echo $text_no;?></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="auth" class="control-label col-sm-3"><?php echo $entry_ignore ?></label>
+                                    <div class="col-sm-9">
+                                        <select name="ignore" class="form-control">
+                                            <option value="1"><?php echo $text_yes;?></option>
+                                            <option value="0"><?php echo $text_no;?></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="auth" class="control-label col-sm-3"><?php echo $entry_log ?></label>
+                                    <div class="col-sm-9">
+                                        <select name="log" class="form-control">
+                                            <option value="1"><?php echo $text_yes;?></option>
+                                            <option value="0"><?php echo $text_no;?></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sort" class="control-label col-sm-3"><?php echo $entry_sort ?></label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="sort" name="sort">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel-footer">
+                                <div class="buttons text-right">
+                                    <a class="btn btn-primary" id="save">
+                                        <?php echo $button_save?>
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+
+    $(function () {
+        $('#tree').jstree({
+            'core' : {
+                'data' : {
+                    'url' : 'index.php?route=setting/map&permission=1&token=<?php echo $token ?>',
+                    'dataType' : 'json'
+                },
+                'check_callback' : true,
+                'themes' : { 'responsive' : false }
+            },
+            'plugins' : ['state','dnd' , 'contextmenu' , 'wholerow'],
+            'contextmenu' : {
+                'items': customContextMenu
+            }
+        })
+        .on('select_node.jstree', function (e, data) { render_detail(data.node.li_attr,'edit'); })
+        .on('delete_node.jstree', function (e, data) { jstree_delete_node(data); })
+        .on('move_node.jstree', function (e, data) { jstree_move_node(data);});
+    });
+    function customContextMenu(node){
+        var items = {
+            'create' : {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "<?php echo $button_create ?>",
+                'icon':'fa fa-plus',
+                "_disabled" : node.children.length ? false : true,
+                "action"  : function(node){
+                    var inst = $.jstree.reference(node.reference),
+                        obj = inst.get_node(node.reference);
+                    render_detail(obj.li_attr,'create');
+                }
+            },
+            'remove' : {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "<?php echo $button_remove ?>",
+                'icon':'fa fa-trash',
+                "action": function (node) {
+                    var inst = $.jstree.reference(node.reference),
+                        obj = inst.get_node(node.reference);
+                    if(inst.is_selected(obj)) {
+                        inst.delete_node(inst.get_selected());
+                    }else {
+                        inst.delete_node(obj);
+                    }
+                }
+            },
+            "rename" : {
+                "label" : '<?php echo $button_sync ?>',
+                "icon":'fa fa-recycle',
+                "_disabled" : parseInt(node.parent) ? true : false,
+                "action" : function (data) {
+
+                    if(confirm('<?php echo $text_confirm_sync ?> ['+node.li_attr.title+']')){
+                        $.ajax({
+                            url:'index.php?route=setting/map/sync&token=<?php echo $token; ?>',
+                            type:'post',
+                            data:{node_id:node.id},
+                            dataType:'json',
+                            beforeSend:function(){
+                                $('#tree-panel .do-result').html('<div class="alert alert-warning"><img src="<?php echo TPL_IMG;?>loading.gif"/><?php echo $text_wait;?></div>');
+                            },
+                            success:function(json){
+                                if(json.status==1){
+                                    $('#tree-panel .do-result').html('<div class="alert alert-success">'+json.msg+'</div>');
+                                    $.jstree.reference(data.reference).load_node(node.id);
+                                }else{
+                                    $('#tree-panel .do-result').html('<div class="alert alert-warning">'+json.msg+'</div>');
+                                    return false;
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        return items;
+    }
+
+    function jstree_delete_node(data){
+        if(confirm('<?php echo $text_confirm_del ?>['+data.node.text +'] ?')){
+            $.post('index.php?route=setting/map/delete&token=<?php echo $token; ?>',
+                    { 'node_id' : data.node.id }
+            ).fail(function () {
+                        data.instance.refresh();
+                    });
+            return true;
+        }
+        return false;
+    }
+
+    function jstree_move_node(data){
+        var type = '<?php echo $text_inside ?>';
+        if(data.parent==data.old_parent){
+            if(data.position > data.old_position){
+                type = '<?php echo $text_after ?>';
+            }
+            if(data.position < data.old_position){
+                type = '<?php echo $text_before ?>';
+            }
+        }
+        var parent_text = '<?php echo $text_root ?>';
+        if($.isNumeric(data.parent)){
+            var _p = data.instance.get_node(data.parent);
+            parent_text = _p.text;
+        }
+        if(confirm('<?php echo $text_confirm_move ?> ['+data.node.text +'] '+type+' ['+parent_text+'] ?')){
+            $.post(
+                'index.php?route=setting/map/save&token=<?php echo $token; ?>',
+                { 'node_id' : data.node.id, 'parent' : data.parent, 'position':data.position,'drag':1},
+                function(json){
+                    $('#tree-panel .do-result').html('<div class="alert alert-success">'+json.msg+'</div>');
+                    if(json.status){ data.instance.refresh(); }
+                },
+                'json'
+            );
+        }
+        data.instance.refresh();
+        return false;
+    }
+    function render_detail(node,action){
+        $('#node-form input').val('');
+        var title = '';
+        if(node && action=='edit'){
+            title = '<?php echo $text_edit;?> '+node.title;
+            $('#parent-name').html(node.super=='' ? '/' : node.super);
+            $('#node-form input[name="node_id"]').val(node.node_id);
+            $('#node-form input[name="parent_id"]').val(node.parent);
+            $('#node-form input[name="function"]').val(node.function);
+            $('#node-form input[name="class"]').val(node.class);
+            $('#node-form input[name="catalog"]').val(node.catalog);
+            $('#node-form select[name="ignore"]').val(node.ignore);
+            $('#node-form select[name="status"]').val(node.status);
+            $('#node-form input[name="sort"]').val(node.sort);
+            if(node.lang){
+                for(var k in node.lang){
+                    $('#node-form input[name="note['+k+']"]').val(node.lang[k]);
+                }
+            }
+        }else{
+            title = '<?php echo $text_new_node?>';
+            $('#parent-name').html(node ? node.super+'/' :'/');
+            $('#node-form input[name="parent_id"]').val(node ? node.id : 0);
+            $('#node-form input[name="function"]').val('');
+            $('#node-form input[name="class"]').val(node ? node.class : '');
+            $('#node-form input[name="catalog"]').val(node ? node.catalog : '');
+            $('#node-form input[name^="note"]').val('');
+        }
+        if(title.length>38){
+            $('#node-title').attr('title',title);
+            title = title.substr(0,title.length-36);
+        }
+        $('#node-title').text(title);
+        return true;
+    }
+    $('#root').on('click',function(){
+        render_detail(false,'create');
+    });
+
+    $('#save').on('click',function(){
+        $('.do-result').empty();
+        $.ajax({
+            url:'index.php?route=setting/map/save&token=<?php echo $token; ?>',
+            type:'post',
+            data:$('#node-form input,#node-form select'),
+            dataType:'json',
+            success:function(json){
+                if(json.status==1){
+                    $('#node-form .do-result').html('<div class="alert alert-success">'+json.msg+'</div>');
+                    $('#tree').jstree().refresh();
+                }else{
+                    $('#node-form .do-result').html('<div class="alert alert-warning">'+json.msg+'</div>');
+                    return false;
+                }
+            }
+        });
+    });
+
+    $('#sync').on('click',function(){
+        if(confirm('<?php echo $text_confirm_sync_all ?>')){
+            $.ajax({
+                url:'index.php?route=setting/map/sync&token=<?php echo $token;?>',
+                type:'post',
+                dataType:'json',
+                beforeSend: function() {
+                    $(this).attr('disabled', true);
+                    $('#tree-panel .do-result').html('<div class="alert alert-warning"><img src="<?php echo TPL_IMG;?>loading.gif"/><?php echo $text_wait;?></div>');
+                },
+                success:function(json){
+                    if(json.status==1){
+                        $(this).removeAttr('disabled');
+                        $('#tree-panel .do-result').html('<div class="alert alert-success">'+json.msg+'</div>');
+                        return true;
+                    }else{
+                        $('#tree-panel .do-result').html('<div class="alert alert-warning">'+json.msg+'</div>');
+                        return false;
+                    }
+                },
+                error: function(xhr, ajaxOptions, thrownError) {
+                    alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+                    return false;
+                }
+            });
+        }
+    });
+
+    $('#toggle').click(function(){
+        if($(this).attr('data-click')==0){
+            $('#tree').jstree().open_all();
+            $(this).attr('data-click',1)
+        }else{
+            $('#tree').jstree().close_all();
+            $(this).attr('data-click',0)
+        }
+    });
+</script>
+
+<?php echo $footer; ?> 

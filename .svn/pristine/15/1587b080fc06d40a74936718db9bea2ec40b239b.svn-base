@@ -1,0 +1,152 @@
+<?php echo $header; ?><?php echo $column_left; ?>
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1><?php echo $heading_title; ?></h1>
+            <ul class="breadcrumb">
+                <?php foreach ($breadcrumbs as $breadcrumb) { ?>
+                <li><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a></li>
+                <?php } ?>
+            </ul>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <?php if ($error_warning) { ?>
+        <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $error_warning; ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        <?php } ?>
+        <?php if ($success) { ?>
+        <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo $success; ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        <?php } ?>
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><i class="fa fa-list"></i> <?php echo $text_list; ?></h3>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="photo-list">
+                            <thead>
+                            <tr>
+                                <td class="text-center"><?php if ($sort == 'ap.date_modified') { ?>
+                                    <a href="<?php echo $sort_date_modified; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_date_modified; ?></a>
+                                    <?php } else { ?>
+                                    <a href="<?php echo $sort_date_modified; ?>"><?php echo $column_date_modified; ?></a>
+                                    <?php } ?>
+                                </td>
+                                <td class="text-center"><?php if ($sort == 'a.advertise_sn') { ?>
+                                    <a href="<?php echo $sort_ad_sn; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_ad_sn; ?></a>
+                                    <?php } else { ?>
+                                    <a href="<?php echo $sort_ad_sn; ?>"><?php echo $column_ad_sn; ?></a>
+                                    <?php } ?>
+                                </td>
+                                <td class="text-center"><?php if ($sort == 'ap.status') { ?>
+                                    <a href="<?php echo $sort_status; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_status; ?></a>
+                                    <?php } else { ?>
+                                    <a href="<?php echo $sort_status; ?>"><?php echo $column_status; ?></a>
+                                    <?php } ?>
+                                </td>
+
+                                <td class="text-center"><?php if ($sort == 'ap.in_charge') { ?>
+                                    <a href="<?php echo $sort_in_charge; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_in_charge; ?></a>
+                                    <?php } else { ?>
+                                    <a href="<?php echo $sort_in_charge; ?>"><?php echo $column_in_charge; ?></a>
+                                    <?php } ?>
+                                </td>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php if ($photos) { ?>
+                            <?php foreach ($photos as $item) { ?>
+                            <tr onclick="load_component(this)" style="cursor: pointer" data-entry="<?php echo $item['photo_id']?>" data-advertise="<?php echo $item['advertise_sn']; ?>">
+                                <td class="text-center"><?php echo $item['date_modified']; ?></td>
+                                <td class="text-center"><?php echo $item['advertise_sn']; ?></td>
+                                <td class="text-center"><?php echo $item['status_text']; ?></td>
+                                <td class="text-center"><?php echo $item['charger']; ?></td>
+                            </tr>
+                            <?php } ?>
+                            <?php } else { ?>
+                            <tr>
+                                <td class="text-center" colspan="4"><?php echo $text_no_results; ?></td>
+                            </tr>
+                            <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12 text-right"><?php echo $results; ?></div>
+                        <div class="col-sm-12 text-left"><?php echo $pagination; ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="panel panel-primary" >
+                <div class="panel-heading" id="panel-header"><?php echo $text_edit ?></div>
+                <div class="panel-body">
+                    <div id="detail-panel" ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript"><!--
+    $(function(){
+        $('a.fancy-img').fancybox();
+    });
+    $('#photo-list > tbody > tr[data-entry="<?php echo $selected ?>"]').trigger('click');
+    function load_component(el){
+        $('#photo-list tr.active').removeClass('active');
+        $(el).addClass('active');
+        $('#panel-header').text('<?php echo $text_edit ?> : '+ $(el).attr('data-advertise'));
+        $('#detail-panel').load('index.php?route=service/advertise_photo/detail&token=<?php echo $token?>&photo_id='+$(el).attr('data-entry'));
+    }
+
+    $('#button-filter').on('click', function() {
+        url = 'index.php?route=service/advertise_photo&token=<?php echo $token; ?>';
+         var paramArr=[];
+        $(".filter input[name],.filter select[name]").each(function(){
+            if($(this).val() && $(this).val()!='*'){
+                paramArr.push($(this).attr("name")+"="+encodeURIComponent($(this).val()))
+            }
+        });
+        if(paramArr.length>0){
+            url+="&"+paramArr.join("&");
+        }
+        location = url;
+    });
+
+    $('#input-customer').autocomplete({
+        'source': function(request, response) {
+            $.ajax({
+                url: 'index.php?route=customer/customer/autocomplete&token=<?php echo $token; ?>&filter_name=' +  encodeURIComponent(request),
+                dataType: 'json',
+                success: function(json) {
+                    response($.map(json, function(item) {
+                        return {
+                            label: item['username']+' '+item['name'],
+                            value: item['customer_id']
+                        }
+                    }));
+                }
+            });
+        },
+        'select': function(item) {
+            $('#input-customer').val(item['label']);
+            $('input[name="filter_customer_id"]').val(item['value']);
+        }
+    });
+
+    $('input[name^=\'selected\']:first').trigger('change');
+
+    $('.date').datetimepicker({ pickTime: false});
+//--></script>
+<style>
+    tr.active{line-height:80px;height:80px;font-weight:bold;color:#333333;}
+    tr.active:after{font-family: FontAwesome;content: "\f054";position: absolute;right: 10px;}
+</style>
+<?php echo $footer; ?>

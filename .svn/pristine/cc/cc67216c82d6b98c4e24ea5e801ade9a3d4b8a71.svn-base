@@ -1,0 +1,88 @@
+<?php if (!empty($operator)): ?>
+<p><code><?php echo $operator ?></code></p>
+<?php endif ?>
+<?php 
+    $btn_class = '';
+    switch ($mode) {
+        case 'targeting':
+            switch ($component['status']) {
+                case '1':
+                    $btn_class = 'btn-warning';
+                    break;
+                case '2':
+                    $btn_class = 'btn-info';
+                    break;
+                case '3':
+                    $btn_class = 'btn-primary';
+                    break;
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                    $btn_class = 'btn-success';
+                    break;
+                case '8':
+                    $btn_class = 'btn-danger';
+                    break;
+            }
+            break;
+        case 'post':
+            switch ($component['status']) {
+                case '1':
+                    $btn_class = 'btn-warning';
+                    break;
+                case '2':
+                case '3':
+                    $btn_class = 'btn-info';
+                    break;
+                case '4':
+                    $btn_class = 'btn-primary';
+                    break;
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                    $btn_class = 'btn-success';
+                    break;
+                case '9':
+                    $btn_class = 'btn-danger';
+                    break;
+            }
+            break;
+        case 'photo':
+            switch ($component['status']) {
+                case '1':
+                    $btn_class = 'btn-warning';
+                    break;
+                case '2':
+                    $btn_class = 'btn-info';
+                    break;
+                case '3':
+                    $btn_class = 'btn-primary';
+                    break;
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                    $btn_class = 'btn-success';
+                    break;
+                case '8':
+                    $btn_class = 'btn-danger';
+                    break;
+            }
+            break;
+    }
+
+?>
+<div class="action-row" style="margin-bottom: 5px;">
+    <a href="javascript:detail(<?php echo $advertise_id ?>,'<?php echo $mode ?>');" data-toggle="tooltip" class="btn <?php echo $btn_class ?>" title="<?php echo $progress_status ?>">
+    <?php if(isset($component['locked']) && $component['locked']){ ?>     
+    <i class="fa fa-lock"></i>   
+    <?php }else if($component['status']>1){ ?>    
+    <i class="fa fa-eye"></i>
+    <?php }else{ ?>
+    <i class="fa fa-exchange"></i>
+    <?php } ?>
+    <?php echo $component['status_text'] ?>
+    </a>
+</div>

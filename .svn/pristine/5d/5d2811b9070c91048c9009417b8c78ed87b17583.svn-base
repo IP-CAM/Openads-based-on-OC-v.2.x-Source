@@ -1,0 +1,809 @@
+<?php
+class ControllerServiceAdvertisePhoto extends Controller {
+	private $error = array();
+
+	public function index() {
+		$this->load->language('service/advertise_photo');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->document->addStyle(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.css');
+		$this->document->addScript(TPL_JS.'datetimepicker/bootstrap-datetimepicker.min.js');
+		
+		$this->document->addStyle(TPL_JS.'fancybox/jquery.fancybox.css?v=2.1.5');
+        $this->document->addScript(TPL_JS.'fancybox/jquery.fancybox.pack.js?v=2.1.5');
+		$this->load->model('service/advertise_photo');
+
+		$this->getList();
+	}
+	public function approve(){
+        $this->load->language('service/advertise_photo');
+        $this->load->model('service/advertise');
+        $photo_id = isset($this->request->get['photo_id']) ? (int)$this->request->get['photo_id'] : false;
+        $result = $this->model_service_advertise->componentApprove($photo_id,$this->request->post,'photo');
+        if($result == -1){
+	        $this->session->data['success'] = $this->language->get('text_locked');
+	    }else if($result == -2){
+	            $json['status'] = 0;
+                $json['msg']    = $this->language->get('text_no_post');
+	    }else if($result){
+            $this->model_service_advertise->autoPublishWaiting($photo_id,'photo');
+
+            $this->model_service_advertise->lockAdvertiseComponent($photo_id,'photo',true,true);
+            $this->session->data['success'] = $this->language->get('text_success');
+        }
+        $this->detail();
+    }
+	public function edit() {
+		$this->load->language('service/advertise_photo');
+		
+		$this->load->model('service/advertise_photo');
+		$json = array('status'=>0,'msg'=>$this->language->get('text_exception'));
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate('service/advertise_photo/edit')) {
+			$result = $this->model_service_advertise_photo->editAdvertisePhoto($this->request->get['photo_id'],$this->request->post);
+			if($result == -1){
+	            $json['status'] = 0;
+                $json['msg']    = $this->language->get('text_locked');
+	        }else  if($result == -2){
+	            $json['status'] = 0;
+                $json['msg']    = $this->language->get('text_no_post');
+	        }else{
+				$this->session->data['success'] = $this->language->get('text_success');
+				$json = array('status'=>1,'msg'=>$this->language->get('text_success'));	
+			}
+		}
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function delete() {
+		$this->load->language('service/advertise_photo');
+
+		$this->load->model('service/advertise_photo');
+		$json = array('status'=>0,'msg'=>$this->language->get('text_exception'));
+		if (isset($this->request->get['photo_id']) && $this->validate('service/advertise_photo/delete')) {
+			$this->model_service_advertise_photo->deleteAdvertisePhoto($this->request->get['photo_id']);
+			$json = array('status'=>1,'msg'=>$this->language->get('text_success'));
+		}
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function apply() {
+		$this->load->language('service/advertise_photo');
+		$json = array('status'=>0,'msg'=>$this->language->get('text_exception'));
+		$this->load->model('service/advertise_photo');
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate('service/advertise_photo/apply')) {
+			$result = $this->model_service_advertise_photo->applyAdvertisePhoto($this->request->post['photo_id']);
+			if($result==-2){
+				$json = array('status'=>0,'msg'=>$this->language->get('text_no_post'));
+				$this->session->data['warning'] = $this->language->get('text_no_post');
+			}else{
+				$json = array('status'=>1,'msg'=>$this->language->get('text_apply_success'));
+			}
+		}
+		$this->response->setOutput(json_encode($json));
+	}
+
+	protected function getList() {
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$filter_advertise_sn = $this->request->get['filter_advertise_sn'];
+		} else {
+			$filter_advertise_sn = null;
+		}
+		if (isset($this->request->get['filter_customer_id'])) {
+			$filter_customer_id = $this->request->get['filter_customer_id'];
+		} else {
+			$filter_customer_id = null;
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$filter_target_url = $this->request->get['filter_target_url'];
+		} else {
+			$filter_target_url = null;
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$filter_status = $this->request->get['filter_status'];
+		} else {
+			$filter_status = null;
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$filter_from = $this->request->get['filter_from'];
+		} else {
+			$filter_from = null;
+		}
+
+		if (isset($this->request->get['filter_in_charge'])) {
+			$filter_in_charge = $this->request->get['filter_in_charge'];
+		} else {
+			$filter_in_charge = null;
+		}
+
+		if (isset($this->request->get['filter_artist'])) {
+			$filter_artist = $this->request->get['filter_artist'];
+		} else {
+			$filter_artist = null;
+		}
+
+		if (isset($this->request->get['filter_modified_start'])) {
+			$filter_modified_start = $this->request->get['filter_modified_start'];
+		} else {
+			$filter_modified_start = null;
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$filter_modified_end = $this->request->get['filter_modified_end'];
+		} else {
+			$filter_modified_end = null;
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$sort = $this->request->get['sort'];
+		} else {
+			$sort = 'ap.date_modified';
+		}
+
+		if (isset($this->request->get['order'])) {
+			$order = $this->request->get['order'];
+		} else {
+			$order = 'DESC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$page = $this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_artist'])) {
+			$url .= '&filter_artist=' . $this->request->get['filter_artist'];
+		}
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . $url, 'SSL')
+		);
+
+		$data['add'] = $this->url->link('service/advertise_photo/add', 'token=' . $this->session->data['token'], 'SSL');
+
+		$data['photos'] = array();
+		$limit = $this->config->get('config_limit_admin');
+		$filter_data = array(
+			'filter_advertise_sn'   => $filter_advertise_sn,
+			'filter_customer_id'	=> $filter_customer_id,
+			'filter_status'	  		=> $filter_status,
+			'filter_from'	  		=> $filter_from,
+			'filter_in_charge'	  	=> $filter_in_charge,
+			'filter_artist'	  		=> $filter_artist,
+			'filter_target_url'     => $filter_target_url,
+			'filter_modified_start' => $filter_modified_start,
+			'filter_modified_end'   => $filter_modified_end,
+			'sort'                 => $sort,
+			'order'                => $order,
+			'start'                => ($page - 1) * $limit,
+			'limit'                => $limit
+		);
+
+		$total = $this->model_service_advertise_photo->getTotalAdvertisePhotos($filter_data);
+
+		$results = $this->model_service_advertise_photo->getAdvertisePhotos($filter_data);
+		$this->load->model('tool/image');
+		$this->load->model('catalog/product');
+		$this->load->model('customer/customer');
+		foreach ($results as $result) {
+			$file = array();
+			$file['image'] = $this->model_tool_image->resize('no_image.png');
+			$file['name'] = 'no_image.png';
+			if(!empty($result['file'])){
+				$files = json_decode($result['file'],true);
+				if(is_array($files)){
+					$attch = current($files);
+					if ($attch['path'] && file_exists($attch['path'])) {
+		                $file['realpath'] = HTTP_CATALOG.substr($attch['path'],strpos($attch['path'],'/')+1);
+		                $file['name'] = $attch['name'];
+		                $file['image'] = $this->model_tool_image->resize($attch['path'], 100, 100,true);
+		            }
+				}
+			}
+			$product_info = $this->model_catalog_product->getProduct($result['product_id']);
+			if(empty($product_info['name'])){
+				$product = sprintf(getBSTagStyle(2),$this->language->get('text_unknown'));
+			}else{
+				$product = sprintf(getBSTagStyle(0),$product_info['name']);
+			}
+			$data['photos'][] = array(
+				'photo_id'  	=> $result['photo_id'],
+				'product'		=> $product,
+				'advertise_id'  => $result['advertise_id'],
+				'advertise_sn'  => $result['advertise_sn'],
+				'target_url'    => $result['target_url'],
+				'customer'      => $result['customer'],
+				'company'       => $result['company'],
+				'status'        => $result['status'],
+				'status_text'   => sprintf(getBSTagStyle($result['status'],'status'),$result['status_text']),
+				'file'      	=> $file,
+				'charger'      	=> $result['charger'],
+				'from'        	=> ucfirst($result['from']),
+				'artist'		=> $result['artist'],
+				'date_modified' => date('Y-m-d', strtotime($result['date_modified'])).'<br>'.date('H:i:s', strtotime($result['date_modified'])),
+				'edit'          => $this->url->link('service/advertise_photo/detail', 'token=' . $this->session->data['token'] . '&photo_id=' . $result['photo_id'] . $url, 'SSL'),
+			);
+		}
+
+		$data['heading_title'] = $this->language->get('heading_title');
+		
+		$data['text_list'] = $this->language->get('text_list');
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['text_confirm'] = $this->language->get('text_confirm');
+		$data['text_missing'] = $this->language->get('text_missing');
+
+		$data['column_target_url'] = $this->language->get('column_target_url');
+        $data['column_ad_sn'] = $this->language->get('column_ad_sn');
+		$data['column_customer'] = $this->language->get('column_customer');
+		$data['column_photo_id'] = $this->language->get('column_photo_id');
+		$data['column_from'] = $this->language->get('column_from');
+		$data['column_file'] = $this->language->get('column_file');
+		$data['column_status'] = $this->language->get('column_status');
+		$data['column_in_charge'] = $this->language->get('column_in_charge');
+		$data['column_artist'] = $this->language->get('column_artist');
+		$data['column_date_modified'] = $this->language->get('column_date_modified');
+		$data['column_action'] = $this->language->get('column_action');
+
+		$data['entry_advertise_id'] = $this->language->get('entry_advertise_id');
+		$data['entry_advertise_sn'] = $this->language->get('entry_advertise_sn');
+		$data['entry_customer'] = $this->language->get('entry_customer');
+		$data['entry_status'] = $this->language->get('entry_status');
+		$data['entry_product'] = $this->language->get('entry_product');
+		$data['entry_from'] = $this->language->get('entry_from');
+		$data['entry_in_charge'] = $this->language->get('entry_in_charge');
+		$data['entry_artist'] = $this->language->get('entry_artist');
+		$data['entry_target_url'] = $this->language->get('entry_target_url');
+		$data['entry_modified_start'] = $this->language->get('entry_modified_start');
+		$data['entry_modified_end'] = $this->language->get('entry_modified_end');
+		$data['entry_from_member'] = $this->language->get('entry_from_member');
+		$data['entry_from_backend'] = $this->language->get('entry_from_backend');
+
+		$data['button_filter'] = $this->language->get('button_filter');
+		$data['button_view'] = $this->language->get('button_view');
+
+		$data['token'] = $this->session->data['token'];
+
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->session->data['success'])) {
+			$data['success'] = $this->session->data['success'];
+
+			unset($this->session->data['success']);
+		} else {
+			$data['success'] = '';
+		}
+
+		if (isset($this->request->post['selected'])) {
+			$data['selected'] = (array)$this->request->post['selected'];
+		} else {
+			$data['selected'] = array();
+		}
+
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_artist'])) {
+			$url .= '&filter_artist=' . $this->request->get['filter_artist'];
+		}
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if ($order == 'ASC') {
+			$url .= '&order=DESC';
+		} else {
+			$url .= '&order=ASC';
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+		$data['sort_customer'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=customer' . $url, 'SSL');
+		$data['sort_artist'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=ap.user_id' . $url, 'SSL');
+		$data['sort_in_charge'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=ap.in_charge' . $url, 'SSL');
+		$data['sort_target_url'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=ap.target_url' . $url, 'SSL');
+		$data['sort_from'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=ap.from' . $url, 'SSL');
+		$data['sort_status'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=ap.status' . $url, 'SSL');
+		$data['sort_date_added'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=ap.date_added' . $url, 'SSL');
+		$data['sort_date_modified'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . '&sort=ap.date_modified' . $url, 'SSL');
+
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_artist'])) {
+			$url .= '&filter_artist=' . $this->request->get['filter_artist'];
+		}
+
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		$pagination = new Pagination();
+		$pagination->total = $total;
+		$pagination->page = $page;
+		$pagination->limit = $limit;
+		$pagination->url = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . $url . '&page={page}', 'SSL');
+
+		$data['pagination'] = $pagination->render();
+
+		$data['results'] = sprintf($this->language->get('text_pagination'), ($total) ? (($page - 1) * $limit) + 1 : 0, ((($page - 1) * $limit) > ($total - $limit)) ? $total : ((($page - 1) * $limit) + $limit), $total, ceil($total / $limit));
+
+		$data['filter_advertise_sn'] = $filter_advertise_sn;
+		$data['filter_customer_id'] = $filter_customer_id;
+		$data['filter_status'] = $filter_status;
+		$data['filter_from'] = $filter_from;
+		$data['filter_target_url'] = $filter_target_url;
+		$data['filter_in_charge'] = $filter_in_charge;
+		$data['filter_artist'] = $filter_artist;
+		$data['filter_modified_start'] = $filter_modified_start;
+		$data['filter_modified_end'] = $filter_modified_end;
+		$data['filter_customer'] = '';
+		if($filter_customer_id){
+			$customer = $this->model_customer_customer->getCustomer($filter_customer_id);
+			$data['filter_customer'] = empty($customer['username']) ? '' : $customer['username'].' '.$customer['nickname'];
+		}
+		$this->load->model('localisation/advertise_photo');
+		$data['photo_statuses'] = $this->model_localisation_advertise_photo->getAdvertisePhotos();
+
+		$this->load->model('user/user');
+		$data['contributors'] = $this->model_user_user->getUsersByGroupKey('contributor');
+
+		$data['users'] = $this->model_user_user->getUsers();
+
+		$data['sort'] = $sort;
+		$data['order'] = $order;
+
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+
+		$this->response->setOutput($this->load->view('service/advertise_photo_list.tpl', $data));
+	}
+
+	public function detail() {
+		$this->load->language('service/advertise_photo');
+		$this->load->model('service/advertise_photo');
+		$this->load->model('service/advertise');
+		$this->document->setTitle($this->language->get('text_edit'));
+		$this->document->addScript(TPL_JS.'jquery.ajaxupload.js');
+		$this->document->addScript(TPL_JS.'jquery.json.min.js');
+		$this->document->addStyle(TPL_JS.'fancybox/jquery.fancybox.css?v=2.1.5');
+        $this->document->addScript(TPL_JS.'fancybox/jquery.fancybox.pack.js?v=2.1.5');
+		$this->document->addStyle(TPL_JS.'formvalidation/dist/css/formValidation.css');
+		$this->document->addScript(TPL_JS.'formvalidation/dist/js/formValidation.js');
+		$this->document->addScript(TPL_JS.'formvalidation/dist/js/framework/bootstrap.min.js');
+
+		$this->load->model('tool/image');
+		$data = $this->model_service_advertise_photo->getAdvertisePhoto($this->request->get['photo_id']);
+
+		$data['heading_title'] = $this->language->get('heading_title');		
+		$data['text_form'] = $this->language->get('text_edit');
+		$data['text_approve'] = $this->language->get('text_approve');
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['text_default'] = $this->language->get('text_default');
+		$data['text_select'] = $this->language->get('text_select');
+		$data['text_none'] = $this->language->get('text_none');
+		$data['text_img_delete'] = $this->language->get('text_img_delete');
+		$data['text_confirm_apply'] = $this->language->get('text_confirm_apply');
+		$data['text_confirm_reset'] = $this->language->get('text_confirm_reset');
+		$data['text_confirm_relax'] = $this->language->get('text_confirm_relax');
+		$data['text_history'] = $this->language->get('text_history');
+		$data['error_photo'] = $this->language->get('error_photo');
+
+		$data['text_targeting'] = $this->language->get('text_targeting');
+		$data['text_photo'] = $this->language->get('text_photo');
+		$data['text_post'] = $this->language->get('text_post');
+
+		$url = '';
+
+		if (isset($this->request->get['filter_advertise_sn'])) {
+			$url .= '&filter_advertise_sn=' . $this->request->get['filter_advertise_sn'];
+		}
+
+		if (isset($this->request->get['filter_customer_id'])) {
+			$url .= '&filter_customer_id=' . (int)$this->request->get['filter_customer_id'];
+		}
+
+		if (isset($this->request->get['filter_target_url'])) {
+			$url .= '&filter_target_url=' . $this->request->get['filter_target_url'];
+		}
+		if (isset($this->request->get['filter_status'])) {
+			$url .= '&filter_status=' . $this->request->get['filter_status'];
+		}
+		if (isset($this->request->get['filter_from'])) {
+			$url .= '&filter_from=' . $this->request->get['filter_from'];
+		}
+		if (isset($this->request->get['filter_in_charge'])) {
+			$url .= '&filter_in_charge=' . $this->request->get['filter_in_charge'];
+		}
+		if (isset($this->request->get['filter_artist'])) {
+			$url .= '&filter_artist=' . $this->request->get['filter_artist'];
+		}
+
+		if (isset($this->request->get['filter_modified_start'])) {
+			$url .= '&filter_modified_start=' . $this->request->get['filter_modified_start'];
+		}
+
+		if (isset($this->request->get['filter_modified_end'])) {
+			$url .= '&filter_modified_end=' . $this->request->get['filter_modified_end'];
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+		$data['breadcrumbs'] = array();
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+        );
+
+        $data['breadcrumbs'][] = array(
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . $url, 'SSL')
+        );
+        $data['cancel'] = $this->url->link('service/advertise_photo', 'token=' . $this->session->data['token'] . $url, 'SSL');
+        $data['action'] = $this->url->link('service/advertise_photo/edit', 'photo_id='.$this->request->get['photo_id'].'&token=' . $this->session->data['token'] , 'SSL');
+        $data['approve_form'] = $this->url->link('service/advertise_photo/approve', 'photo_id='.$this->request->get['photo_id'].'&token=' . $this->session->data['token'] , 'SSL');
+        $data['mode_action'] = htmlspecialchars_decode($this->url->link('service/advertise/ajax_data','token='.$this->session->data['token'],'SSL'));
+
+        $photo = $this->model_service_advertise_photo->getAdvertisePhoto($this->request->get['photo_id']);
+		$data['modify'] = $photo['user_id'] == $this->user->getId();
+		$data['photo_id'] = $photo['photo_id'];
+        $data['target_url'] = $photo['target_url'];
+        $data['advertise_sn'] = $photo['advertise_sn'];
+        $data['domain'] = $photo['domain'];
+        $data['website_status'] = $photo['website_status'];
+        $data['website_status_text'] = $photo['website_status'] ? $this->language->get('text_active') : $this->language->get('text_stop');
+        $data['customer'] = $photo['customer'];
+        $data['company'] = $photo['company'];
+        $data['artist'] = $photo['artist'];
+        $data['charger'] = $photo['charger'];
+        $data['last_modified'] = $photo['date_modified'];
+        $data['status'] = isset($photo['status']) ? $photo['status'] : 0;
+        $data['from'] = isset($photo['from']) ? strtolower($photo['from']) : 'member';
+		if(in_array($data['status'], $this->config->get('ad_photo_levels'))){
+            $data['modify'] = false;
+        }
+
+        $data['approve'] = $data['reset'] = false;
+        if($photo['in_charge'] == $this->user->getId() || in_array($this->user->getId(), $this->config->get('ad_group_manager'))){
+            $data['approve'] = in_array($photo['status'], array_merge($this->config->get('ad_photo_levels'),array($this->config->get('ad_photo_review')))) ;
+            $data['modify'] = $data['reset'] = !in_array($photo['status'], $this->config->get('ad_photo_levels'));
+        }
+
+        $data['locked'] = $data['unblocked'] = false;
+        if(!empty($photo['locker'])){
+            if($photo['locker'] == $this->user->getId()){
+                $data['locked'] = false;
+            }else{
+                $data['locked'] = true;
+                $data['text_lock'] = sprintf($this->language->get('text_lock'),$photo['keyer']);
+                if(($this->user->getId() == $photo['in_charge']) || in_array($this->user->getId(),$this->config->get('ad_group_manager'))){
+                    $data['unblocked'] = true;
+                }
+            }           
+        }else if(($this->user->getId() == $photo['user_id']) || ($this->user->getId() == $photo['in_charge']) || in_array($this->user->getId(),$this->config->get('ad_group_manager'))){
+            $this->model_service_advertise->lockAdvertiseComponent((int)$photo['photo_id'] ,'photo');  
+        }
+        if($data['locked']){
+            $data['modify'] = $data['approve'] = $data['reset'] = false;
+        }
+        if(!$photo['website_status']){
+			$data['locked'] = true;
+			$data['modify'] = $data['unblocked'] = $data['approve'] = $data['reset'] = false;
+			$data['text_lock'] = $this->language->get('text_website_status');
+		}
+
+        $data['ad_note'] = isset($photo['ad_note']) ? $photo['ad_note'] : '';
+        $data['note'] = isset($photo['note']) ? $photo['note'] : '';
+		if(!empty($photo['file'])){
+			$files = json_decode($photo['file'],true);
+			if(is_array($files)){
+				$file = array();
+				foreach ($files as $item) {
+					$file[] = array(
+						'realpath' => HTTP_CATALOG.substr($item['path'],strpos($item['path'],'/')+1),
+						'name' => $item['name'],
+						'path' => $item['path'],
+						'image'	=> $this->model_tool_image->resize($item['path'], 100, 100,true)
+					);
+				}
+				$data['file'] = $file;
+			}
+		}
+
+		$data['apply'] = false;
+		if($data['from'] == 'backend' && !$data['user_id']){
+			$data['apply'] = true;
+		}
+		$data['entry_advertise_sn'] = $this->language->get('entry_advertise_sn');
+		$data['entry_customer'] = $this->language->get('entry_customer');
+		$data['entry_from'] = $this->language->get('entry_from');
+		$data['entry_product'] = $this->language->get('entry_product');
+		$data['entry_in_charge'] = $this->language->get('entry_in_charge');
+		$data['entry_new'] = $this->language->get('entry_new');
+		$data['entry_file'] = $this->language->get('entry_file');
+		$data['entry_note'] = $this->language->get('entry_note');
+		$data['entry_status'] = $this->language->get('entry_status');
+		$data['entry_artist'] = $this->language->get('entry_artist');
+		$data['entry_from'] = $this->language->get('entry_from');
+		$data['entry_from_member'] = $this->language->get('entry_from_member');
+		$data['entry_from_backend'] = $this->language->get('entry_from_backend');
+		$data['entry_website'] = $this->language->get('entry_website');
+		$data['entry_target_url'] = $this->language->get('entry_target_url');
+		$data['entry_date_added'] = $this->language->get('entry_date_added');
+
+		$data['entry_location'] = $this->language->get('entry_location');
+		$data['entry_other_location'] = $this->language->get('entry_other_location');
+        $data['entry_language'] = $this->language->get('entry_language');
+        $data['entry_other_language'] = $this->language->get('entry_other_language');
+        $data['entry_gender'] = $this->language->get('entry_gender');
+        $data['entry_age'] = $this->language->get('entry_age');
+        $data['advertise_id'] =$photo['advertise_id'];
+
+        $targeting = $this->model_service_advertise_photo->getAdvertiseTargeting($data['advertise_id']);
+		$location = $language = array();
+        if(isset($targeting['location'])){
+            $location = explode(",", $targeting['location']);
+        }
+        if(isset($targeting['language'])){
+            $language = explode(",", $targeting['language']);
+        }
+        $data['location'] = is_array($location) ? $location : array();
+        $data['language'] = is_array($language) ? $language : array();
+        $data['other_location'] = isset($targeting['other_location']) ? $targeting['other_location'] : '';
+        $data['other_language'] = isset($targeting['other_language']) ? $targeting['other_language'] : '';
+        $data['gender'] = isset($targeting['gender']) ? $targeting['gender'] : '';
+        $data['age_min'] = isset($targeting['age_min']) ? $targeting['age_min'] : '';
+        $data['age_max'] = isset($targeting['age_max']) ? $targeting['age_max'] : '';
+        $data['targeting_status'] = sprintf(getBSTagStyle($targeting['status'],'status'),$targeting['name']);
+        
+        $post = $this->model_service_advertise_photo->getAdvertisePost($data['advertise_id']);
+        $data['entry_headline'] = $this->language->get('entry_headline');
+		$data['entry_post_text'] = $this->language->get('entry_post_text');
+		$data['entry_post_note'] = $this->language->get('entry_post_note');
+
+		$data['headline'] = isset($post['headline']) ? html_entity_decode($post['headline']) : '';
+        $data['post_text'] = isset($post['text']) ? html_entity_decode($post['text']) : '';
+        $data['post_note'] = isset($post['note']) ? $post['note'] : '';
+        $data['post_status'] = sprintf(getBSTagStyle($post['status'],'status'),$post['name']);
+
+		$data['button_save'] = $this->language->get('button_save');
+		$data['button_cancel'] = $this->language->get('button_cancel');
+		$data['button_upload'] = $this->language->get('button_upload');
+		$data['button_apply'] = $this->language->get('button_apply');
+		$data['button_update'] = $this->language->get('button_update');
+        $data['button_unlock'] = $this->language->get('button_unlock');
+        $data['button_reset'] = $this->language->get('button_reset');
+
+		$data['tab_advertise'] = $this->language->get('tab_advertise');
+		$data['tab_photo'] = $this->language->get('tab_photo');
+		$data['tab_history'] = $this->language->get('tab_history');
+		$data['token'] = $this->session->data['token'];
+		if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+        if (isset($this->session->data['warning'])) {
+            $data['error_warning'] = $this->session->data['warning'];
+
+            unset($this->session->data['warning']);
+        } else {
+            $data['error_warning'] = '';
+        }
+		if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
+        $this->load->model('localisation/targeting');
+        $data['locations'] = $this->model_localisation_targeting->getTargetingsByCategory('location');
+        $data['genders'] = $this->model_localisation_targeting->getTargetingsByCategory('gender');
+        $data['languages'] = $this->model_localisation_targeting->getTargetingsByCategory('language');
+
+		$this->load->model('localisation/advertise_photo');
+		$data['photo_statuses'] = $this->model_localisation_advertise_photo->getAdvertisePhotos();
+        $status = $this->model_localisation_advertise_photo->getAdvertisePhoto($data['status']);
+        if($status){
+            $data['status_text'] = sprintf(getBSTagStyle($status['status_id'],'status'),$status['name']);
+        }else{
+            $data['status_text'] = sprintf(getBSTagStyle(0,'status'),$this->language->get('text_unknown'));
+        }
+		$this->load->model('catalog/product');
+		$product_info = $this->model_catalog_product->getProduct($data['product_id']);
+		if(empty($product_info['name'])){
+			$data['product'] = sprintf(getBSTagStyle(2),$this->language->get('text_unknown'));
+		}else{
+			$data['product'] = sprintf(getBSTagStyle(0),$product_info['name']);
+		}
+		$data['header'] = $this->load->controller('common/header');
+        $data['column_left'] = $this->load->controller('common/column_left');
+        $data['footer'] = $this->load->controller('common/footer');
+		$this->response->setOutput($this->load->view('service/advertise_photo_form.tpl', $data));
+	}
+
+	protected function validate($route) {
+		if (!$this->user->hasPermission($route)) {
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
+
+		return !$this->error;
+	}
+
+	public function history() {
+		$this->load->language('service/advertise_photo');
+		$this->load->model('service/advertise_photo');
+
+		$data['text_no_results'] = $this->language->get('text_no_results');
+		$data['column_date_added'] = $this->language->get('column_date_added');
+		$data['column_status'] = $this->language->get('column_status');
+		$data['column_operator'] = $this->language->get('column_operator');
+		$data['column_note'] = $this->language->get('column_note');
+		$data['column_from'] = $this->language->get('column_from');
+
+		if (isset($this->request->get['page'])) {
+			$page = $this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$data['histories'] = array();
+
+		$this->load->model('service/advertise_photo');
+
+		$results = $this->model_service_advertise_photo->getAdvertisePhotoHistories($this->request->get['photo_id'], ($page - 1) * 10, 10);
+
+		foreach ($results as $result) {
+			$operator = 'Artist';
+			if($result['customer_id']){
+				$operator = 'Customer';
+			}else if($result['in_charge']){
+				$operator = 'In Charge';
+			}
+
+			if($result['user_id']){
+				$operator .= '<br>[<i>'.$result['artist'].'</i>]';
+			}
+			$data['histories'][] = array(
+				'operator' 	=> $operator,
+				'from'      => $result['from']=='member' ? $this->language->get('entry_from_member') : $this->language->get('entry_from_backend'),
+				'status'   	=> $result['status'],
+				'note'    	=> nl2br($result['note']),
+				'date_added'=> date('Y-m-d', strtotime($result['date_added'])).'<br>'. date('H:i:s', strtotime($result['date_added']))
+			);
+		}
+
+		$history_total = $this->model_service_advertise_photo->getTotalAdvertisePhotoHistories($this->request->get['photo_id']);
+
+		$pagination = new Pagination();
+		$pagination->total = $history_total;
+		$pagination->page = $page;
+		$pagination->limit = 10;
+		$pagination->url = $this->url->link('service/advertise_photo/history', 'token=' . $this->session->data['token'] . '&photo_id=' . $this->request->get['photo_id'] . '&page={page}', 'SSL');
+
+		$data['pagination'] = $pagination->render();
+
+		$data['results'] = sprintf($this->language->get('text_pagination'), ($history_total) ? (($page - 1) * 10) + 1 : 0, ((($page - 1) * 10) > ($history_total - 10)) ? $history_total : ((($page - 1) * 10) + 10), $history_total, ceil($history_total / 10));
+
+		$this->response->setOutput($this->load->view('service/advertise_photo_history.tpl', $data));
+	
+	}
+}

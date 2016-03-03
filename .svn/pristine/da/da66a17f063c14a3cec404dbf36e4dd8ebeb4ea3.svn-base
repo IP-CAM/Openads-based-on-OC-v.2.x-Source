@@ -1,0 +1,65 @@
+<?php
+class Url {
+	private $domain;
+	private $ssl;
+	private $rewrite = array();
+
+	public function __construct($domain, $ssl = '') {
+		$this->domain = $domain;
+		$this->ssl = $ssl;
+	}
+
+	public function addRewrite($rewrite) {
+		$this->rewrite[] = $rewrite;
+	}
+
+	public function link($route, $args = '', $secure = false) {
+		if (!$secure) {
+			$url = $this->domain;
+		} else {
+			$url = $this->ssl;
+		}
+
+		$url .= 'index.php?route=' . $route;
+
+		if ($args) {
+			$url .= str_replace('&', '&amp;', '&' . ltrim($args, '&'));
+		}
+
+		foreach ($this->rewrite as $rewrite) {
+			$url = $rewrite->rewrite($url);
+		}
+
+		return $url;
+	}
+
+	public function download($data){
+		$tmp_args = $args = $encrypt =  array();
+		if(empty($data['path']) && empty($data['encrypt'])){
+			return false;
+		}else{
+			$tmp_args[] = "path=".trim($data['path']);
+			$encrypt['path'] = trim($data['path']);
+		}
+		if(!empty($data['name'])){
+			$tmp_args[] = "name=".trim($data['name']);
+			$encrypt['name'] = trim($data['name']);
+		}else{
+			$tmp_args[] = "name=".basename($data['path']);
+			$encrypt['name'] = basename($data['path']);
+		}
+		
+		if(!empty($data['encrypt'])){
+			$args[] = "je=".urlencode(JEncrypt(json_encode($encrypt)));
+		}else{
+			$args = $tmp_args;
+		}
+		if(!empty($data['token'])){
+			$args[] = "token=".trim($data['token']);
+		}
+		$route = !empty($data['route']) ? trim($data['route']) : 'common/download';
+		$connection = !empty($data['connection']) ? trim($data['connection']) : 'SSL';
+		return $this->link($route,implode("&", $args),$connection);
+	}
+
+}

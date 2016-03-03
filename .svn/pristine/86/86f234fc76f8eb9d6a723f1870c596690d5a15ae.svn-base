@@ -1,0 +1,310 @@
+<div class="do-result">
+    <?php if ($locked) { ?>
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $text_lock; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <?php if ($error_warning) { ?>
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <?php echo $error_warning; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+    <?php if ($success) { ?>
+    <div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo $success; ?>
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    <?php } ?>
+</div>
+
+<ul class="nav nav-tabs">
+    <li class="active"><a href="#tab-post" data-toggle="tab"><?php echo $tab_post; ?></a></li>
+    <li><a href="#tab-history" data-toggle="tab"><?php echo $tab_history; ?></a></li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane active" id="tab-post">
+        <form method="post" class="form-horizontal" id="ad-post-update" action="<?php echo $action ?>">
+            <input type="hidden" name="post_id" value="<?php echo $post_id?>">
+
+            <fieldset>
+                <legend>
+                    <?php echo $text_post ?>
+                    <div class="pull-right">
+                        <?php echo $status_text ?>
+                    </div>
+                </legend>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_headline ?></label>
+                    <div class="col-sm-10 ">
+                        <input type="text" name="headline" value="<?php echo $headline ?>" class="form-control" <?php echo $modify ? '' : 'readonly' ?>/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_post_text ?></label>
+                    <div class="col-sm-10">
+                        <textarea name="text" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $text ?></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_note ?></label>
+                    <div class="col-sm-10">
+                        <textarea name="note" class="form-control" <?php echo $modify ? '' : 'readonly' ?>><?php echo $note ?></textarea>
+                    </div>
+                </div>
+
+                <?php if($relax){ ?>
+                <fieldset>
+                    <legend></legend>
+                    <div class="form-group">
+                        <div class="col-sm-10 col-sm-offset-2">
+                            <button type="button" id="btn-relax" data-toggle="tooltip" title="<?php echo $button_relax; ?>" class="btn btn-warning">
+                                <i class="fa fa-unlock"></i> <?php echo $button_relax; ?>
+                            </button>
+                        </div>
+                    </div>
+                </fieldset>
+                <?php } ?>
+                <?php if($modify){ ?>
+                <fieldset>
+                    <legend></legend>
+                    <div class="form-group">
+                        <div class="col-sm-10 col-sm-offset-2">
+                            <button id="ad-post-update" data-toggle="tooltip" title="<?php echo $button_save; ?>" class="btn btn-primary">
+                                <i class="fa fa-save"></i> <?php echo $button_save; ?>
+                            </button>
+                        </div>
+                    </div>
+                </fieldset>
+                <?php }?>
+            </fieldset>
+            <fieldset id="advertise-set">
+                <legend>
+                    <?php echo $text_advertise ?>
+                    <div class="pull-right">
+                        <a class="btn btn-default btn-xs widget-tg" data-rel="advertise"><i class="fa fa-minus"></i> </a>
+                    </div>
+                </legend>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_product ?></label>
+                    <div class="col-sm-10">
+                        <?php echo $product ?>
+                    </div>
+                </div>
+                <?php if(!empty($domain)){ ?>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_domain ?></label>
+                    <div class="col-sm-10">
+                        <?php echo $domain ?>
+                    </div>
+                </div>
+                <?php }?>
+                <?php if(!empty($ad_note)){ ?>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_ad_note ?></label>
+                    <div class="col-sm-10">
+                        <?php echo $ad_note ?>
+                    </div>
+                </div>
+                <?php }?>
+            </fieldset>
+            <fieldset id="targeting-set">
+                <legend>
+                    <?php echo $text_targeting ?>
+                    <div class="pull-right">
+                        <?php echo $targeting_status ?>
+                        <a class="btn btn-default btn-xs widget-tg" data-rel="targeting"><i class="fa fa-minus"></i> </a>
+                    </div>
+                </legend>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_target_url ?></label>
+                    <div class="col-sm-10">
+                        <textarea class="form-control" readonly><?php echo $target_url ?></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_location ?></label>
+                    <div class="col-sm-10">
+                        <?php foreach ($locations as $item): ?>
+                        <?php if(in_array($item['targeting_id'], $location)){ ?>
+                        <label class="label label-default"><?php echo $item['name'] ?></label>
+                        <?php }?>
+                        <?php endforeach ?>
+                        <?php if(!empty($other_location)){ ?>
+                        <textarea class="form-control" readonly><?php echo $other_location ?></textarea>
+                        <?php }?>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_age ?></label>
+                    <div class="col-sm-10">
+                        <label class="label label-default">
+                            <?php echo $age_min ?> - <?php echo $age_max >65 ? '65+' : $age_max ?>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_gender ?></label>
+                    <div class="col-sm-10">
+                        <?php foreach ($genders as $item): ?>
+                        <?php if($item['targeting_id']==$gender){ ?>
+                        <label class="label label-default"><?php echo $item['name'] ?></label>
+                        <?php }?>
+                        <?php endforeach ?>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_language ?></label>
+                    <div class="col-sm-10">
+                        <?php foreach ($languages as $item): ?>
+                        <?php if(in_array($item['targeting_id'], $language)){ ?>
+                        <label class="label label-default"><?php echo $item['name'] ?></label>
+                        <?php }?>
+                        <?php endforeach ?>
+                        <?php if(!empty($other_language)){ ?>
+                        <textarea class="form-control" readonly><?php echo $other_language ?></textarea>
+                        <?php }?>
+                    </div>
+                </div>
+                <?php if(!empty($interest)) { ?>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_interest ?></label>
+                    <div class="col-sm-10">
+                        <textarea class="form-control" readonly><?php echo $interest ?></textarea>
+                    </div>
+                </div>
+                <?php } ?>
+                <?php if(!empty($audience)) { ?>
+                <div class="form-group">
+                    <label class="col-sm-2 text-right"><?php echo $entry_audience ?></label>
+                    <div class="col-sm-10">
+                        <input class="form-control" readonly value="<?php echo $audience ?>" />
+                    </div>
+                </div>
+                <?php } ?>
+            </fieldset>
+            <?php if(is_array($file) && $file){ ?>
+            <fieldset id="photo-set">
+                <legend>
+                    <?php echo $text_photo ?>
+                    <div class="pull-right">
+                        <?php echo $photo_status ?>
+                        <a class="btn btn-default btn-xs widget-tg" data-rel="photo"><i class="fa fa-minus"></i></a>
+                    </div>
+                </legend>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_photo ?></label>
+                    <div class="col-sm-10 ">
+                        <div id="ad-imgs" class="uploads">
+                            <?php foreach ($file as $item): ?>
+                            <div class="attach">
+                                <?php if(!empty($item['realpath'])){ ?>
+                                <a href="<?php echo $item['realpath'] ?>" class="fancy-img"></a>
+                                <?php } ?>
+                                <img src="<?php echo $item['image']; ?>" class="img-thumbnail" title="<?php echo $item['name']; ?>" filename="<?php echo $item['name'] ?>" filepath="<?php echo $item['path'] ?>">
+                            </div>
+                            <?php endforeach ?>
+                        </div>
+                    </div>
+                </div>
+                <?php if($note){ ?>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label"><?php echo $entry_note ?></label>
+                    <div class="col-sm-10">
+                        <textarea name="note" class="form-control" readonly ><?php echo $note ?></textarea>
+                    </div>
+                </div>
+                <?php }?>
+            </fieldset>
+            <?php }?>
+        </form>
+    </div>
+    <div class="tab-pane" id="tab-history">
+        <div id="history"></div>
+    </div>
+</div>
+
+<script type="text/javascript"><!--
+    <?php if($modify){ ?>
+    $(function(){
+        $('#ad-post-update')
+        .formValidation({
+            framework:'bootstrap',
+            icon: false,
+            fields: {
+                'headline':{
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_headline ?>'
+                        },
+                        stringLength: {
+                            min:3,
+                            max:25,
+                            message:'<?php echo $error_headline_length ?>'
+                        }
+                    }
+                },
+                'text':{
+                    validators: {
+                        notEmpty: {
+                            message: '<?php echo $error_text ?>'
+                        },
+                        stringLength: {
+                            min:3,
+                            max:90,
+                            message:'<?php echo $error_text_length ?>'
+                        }
+                    }
+                },
+
+            }
+        })
+        .on('success.form.fv', function(e) {
+            e.preventDefault();
+            var $form = $(e.target);
+            $.post(
+                $form.attr('action'),
+                $form.serialize(),
+                function(json){
+                    $('html, body').animate({ scrollTop: 0 }, 'fast');
+                    if(json.status==0){
+                        $('.do-result').html('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json.msg + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                    }else{
+                        location.reload();
+                        $.get('index.php?route=tool/cron/similar_text&token=<?php echo $token?>');
+                    }
+                },
+                'json'
+            );
+        });
+        $('input[name="headline"]').maxlength( {events: ['blur'],maxCharacters:25,slider:true,statusClass:'_txtlimit'} );
+        $('textarea[name="text"]').maxlength( {events: ['blur'],maxCharacters:90,slider:true,statusClass:'_txtlimit'} );
+    });
+    <?php }?>
+    <?php if($relax){ ?>
+    $('#btn-relax').bind('click',function(){
+        _component.update(
+            'index.php?route=service/advertise/relax&token=<?php echo $token?>',
+            {mode:'post',entry_id:'<?php echo $post_id ?>'}
+        );
+    });
+    <?php }?>
+    //toggle
+    $('.widget-tg').bind('click', function () {
+        $('#'+$(this).attr('data-rel')+'-set').find('div.form-group').slideToggle();
+        if($(this).children('i').hasClass('fa-minus')){
+            $(this).children('i').removeClass('fa-minus').addClass('fa-plus');
+        }else{
+            $(this).children('i').removeClass('fa-plus').addClass('fa-minus');
+        }
+    });
+    $('.widget-tg[data-rel="targeting"],.widget-tg[data-rel="photo"]').trigger('click');
+    //History
+    $('#history').delegate('.pagination a', 'click', function(e) {
+        e.preventDefault();
+        $('#history').load(this.href);
+    });
+    $('#history').load('index.php?route=service/advertise_post/history&token=<?php echo $token; ?>&post_id=<?php echo $post_id; ?>');
+
+//--></script>
